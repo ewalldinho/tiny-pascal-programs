@@ -1,0 +1,280 @@
+Unit GUI_Toolkit;
+
+INTERFACE
+
+   Uses CRT, DOS;
+
+   Const KEY_UP = 72;
+         KEY_DOWN = 75;
+         KEY_LEFT = 77;
+         KEY_RIGHT = 80;
+         KEY_BACKSPACE = 8;
+         KEY_ENTER = 13;
+         KEY_ESC = 27;
+
+         EXTS_MAX = 10; // didþiausias extensionu kiekis
+         FPP = 15;  // FILES_PER_PAGE
+         
+         BIG = 'b';
+         OFF = 'f';
+         ONN = 'n';
+         
+   Type ExtsType = array[1..EXTS_MAX] of string;
+
+  (*
+   *  Rodo meniu su failø sàraðu ir leidþia pasirinkti vienà failà
+   *   (+) failas : string - pasirinkto failo pavadinimas
+   *   (+) exts : ExtsType - extensionu masyvas (['txt', 'sdk'])
+   *   (+) maxSize  - maksimalus rodomo failo dydis baitais
+   *   (+) maxFiles - kiek maxFailø parenka ið tinkamø
+   *)
+  Procedure SelectFile(var failas : string; exts : ExtsType; maxSize : word);
+  
+  // iðjungia, ájungia, padidina kursoriø
+  Procedure ChangeCursor(mode : char);
+
+  // nubrëþia mygtukà kurio virðutinis kairys kampas X, Y ir jo plotis width
+  Procedure DrawButton(btnTitle : string; width, startX, startY : integer);
+  // padaro langà 1,1, 80,25 ir já iðvalo
+  Procedure FullScreen();
+  // nupieðia langà
+  Procedure Langas(x1, y1, x2, y2 : Byte; BC, TC : Byte);
+  // nuskaito ið klaviatûros paspaudimà ir gràþina vienà ið atitinkamø const.
+  Function GetKey() : word;
+  // perraðo delay procedura
+  Procedure Palaukti(time: word);
+
+{------------------------------------------------------------------------------}
+
+IMPLEMENTATION
+
+  // vidine funkcija surasti extensionu skaiciui
+  Function CountExts(exts : ExtsType) : word;
+      var i : word;
+          yra : boolean;
+    begin
+        i := 0;
+        yra := TRUE;
+        repeat
+            i := i + 1;
+            if exts[i] = ''
+            then yra := FALSE;
+        until not yra;
+        
+        CountExts := i-1;
+    end;
+  // vidine funkcija suskaièiuoti tinkamiems failams
+  Function CountPages(exts : ExtsType; numOfExts : word; maxSize : word) : word;
+        var numOfPages, i, numOfFiles : word;
+            dir : SearchRec;
+    begin
+        numOfFiles := 0;
+        
+        for i := 1 to numOfExts do
+        begin
+            // ieðkoma *.exts[i] failø
+            FindFirst('*.'+exts[i], ARCHIVE, dir);
+            while (DosError=0) do
+            begin
+                if (dir.Size <= maxSize) // pvz apribojama iki 512B
+                then begin
+                    numOfFiles := numOfFiles + 1;
+                end;
+                FindNext(dir);
+            end;
+            FindClose(dir);
+        end;
+        
+        if numOfFiles mod FPP = 0
+        then numOfPages := numOfFiles div FPP
+        else numOfPages := numOfFiles div FPP + 1;
+        
+        CountPages := numOfPages;
+    end;
+    
+  // suteikia GUI pasirenkant SuDoKu failà
+  Procedure SelectFile(var failas : string; exts : ExtsType; maxSize : word);
+      var dir : SearchRec;
+          i, nr, inPage, numOfFiles, numOfExts,
+          p, page, pages : word;
+          files : array[1..FPP] of string;
+          done, telpaFailai : boolean;
+    begin
+        nr := 0;   // pasirinktas failas
+        done := FALSE;
+        numOfExts := CountExts(exts);  // randamas exts skaièius
+        pages := CountPages(exts, numOfExts, maxSize);  // kiek ið viso puslapiø
+        
+        if pages > 0
+        then begin
+            page := 1;  // dabartinis puslapis
+            nr := 1;  // paþyëtas pirmas failas sàraðe
+            
+            repeat
+                numOfFiles := 0; // ið viso nuskaityta failø
+                inPage := 0;   // nuskaityta á masyvà
+                telpaFailai := TRUE;
+
+                // nuskaitomi tinkami failai
+                for i := 1 to numOfExts do
+                begin
+                    // ieðkoma *.exts[i] failø
+                    FindFirst('*.'+exts[i], ARCHIVE, dir);
+                    while (DosError=0) and telpaFailai do
+                    begin
+                        if (dir.Size <= maxSize) // pvz apribojama iki 512B
+                        then begin
+                            numOfFiles := numOfFiles + 1;
+                            if numOfFiles > FPP*page
+                            then telpaFailai := FALSE;
+                            if (numOfFiles > FPP*(page-1)) and (numOfFiles <= FPP*page)
+                            then begin
+                                inPage := inPage + 1;
+                                files[inPage] := dir.Name;
+                            end;
+                        end;
+                        FindNext(dir);
+                    end;
+                    FindClose(dir);
+                end;
+
+                // atvaizduojami rasti failai
+                ClrScr;
+                TextColor(BLACK);
+                TextColor(RED);
+                WriteLn(' Rasti failai:');
+                TextColor(LIGHTGRAY);
+                
+                // iðraðomi failø pavadinimai
+                for i := 1 to inPage do
+                    if i = nr
+                    then begin
+                        TextColor(WHITE);
+                        WriteLn('->', files[i]);
+                        TextColor(LIGHTGRAY);
+                    end
+                    else WriteLn('  ', files[i]);
+                // laukiama vartotojo veiksmø
+                case (GetKey) of
+                    KEY_UP: begin
+                                nr := nr-1;
+                                if (nr < 1) then nr := inPage;
+                            end;
+                    KEY_DOWN: begin
+                                nr := nr+1;
+                                if (nr > inPage) then nr := 1;
+                              end;
+                    KEY_LEFT: if (page > 1) then page := page - 1;
+                    KEY_RIGHT: if (page < pages) then page := page + 1;
+                    KEY_ENTER: done := TRUE;
+                    KEY_ESC: begin
+                                 nr := 0;
+                                 done := TRUE;
+                             end;
+                end; // case
+            until done;
+        end
+        else begin
+            WriteLn('Nerasta tinkamu SuDoKu failu.');
+            WriteLn('[enter]');
+            ReadLn;
+        end;
+                
+        if nr = 0
+        then failas := ''
+        else failas := files[nr];
+    end;
+
+  // keièia kursoriø
+  Procedure ChangeCursor(mode : char);
+    begin
+        if mode = OFF then CursorOff;
+        if mode = ONN then CursorOn;
+        if mode = BIG then CursorBig;
+    end;
+
+  // nupieðia mygtukà
+  Procedure DrawButton(btnTitle : string; width, startX, startY : integer);
+      var i, ilgis, spaces : integer;
+          xSpace : boolean;
+    begin
+        ilgis := length(btnTitle);
+        if (ilgis > width) then
+        begin
+            btnTitle := copy(btnTitle, 1, width);
+            ilgis := length(btnTitle);
+        end;
+        spaces := width-ilgis;
+        if spaces mod 2 = 0 then xSpace := FALSE
+                            else xSpace := TRUE;
+        spaces := spaces div 2;
+
+        GoToXY(startX, startY);
+        Write(#201); for i := 1 to width do Write(#205); Write(#187);
+
+        GoToXY(startX, startY+1);
+        Write(#186);
+        for i := 1 to spaces do
+            Write(' ');
+        Write(btnTitle);
+        for i := 1 to spaces do
+            Write(' ');
+        if xSpace then Write(' ');
+        Write(#186);
+
+        GoToXY(startX, startY+2);
+        Write(#200); for i := 1 to width do Write(#205); Write(#188);
+    end;
+
+  // iðvalo visà ekranà
+  Procedure FullScreen();
+    begin
+        Window(1, 1, 80, 25);
+        TextBackground(WHITE);
+        TextColor(BLACK);
+        ClrScr;
+    end;
+
+  // nupieðia langà
+  Procedure Langas(x1, y1, x2, y2 : Byte; BC, TC : Byte);
+    begin
+        Window(x1, y1, x2, y2);
+        TextBackground(BC);
+        TextColor(Tc);
+        ClrScr;
+    end;
+    
+  // nuskaito paspaustà klaviðà ir gràþina vienà ið konstantø arba simbolio kodà
+  Function GetKey() : word;
+        var key : char;
+     begin
+         key := ReadKey;
+         case key of
+           #0: begin
+                key := ReadKey;
+                case key of
+                  #72: GetKey := KEY_UP;    { Up }
+                  #75: GetKey := KEY_LEFT;  { Left }
+                  #77: GetKey := KEY_RIGHT; { Right }
+                  #80: GetKey := KEY_DOWN;  { Down }
+                  else GetKey := 0;
+                end;
+           end;
+           #13: GetKey := KEY_ENTER;  { ENTER }
+           #27: GetKey := KEY_ESC;    { Esc }
+           else GetKey := Ord(key);
+         end;
+     end;
+
+    // perraðo Delay procedura
+    Procedure Palaukti(time: word);
+    begin
+        Delay(time);
+    end;
+    
+{------------------------------------------------------------------------------}
+
+begin
+
+end.
+

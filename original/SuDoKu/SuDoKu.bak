@@ -1,0 +1,89 @@
+Program SuDoKu_sprendejas;
+   Uses SuDoKu_API, GUI_Toolkit, SuDoKu_Global;
+
+   const EXTS : array[1..2] of string = ('sdk', 'txt');
+         EXTC = 2;
+
+
+   Var SDK : SuDoKu;
+       menuItem : integer;
+       i, j : integer;
+       ivestas, inputed, viskas : boolean;
+
+Begin
+    ChangeCursor(OFF);
+    inputed := FALSE;
+    viskas := FALSE;
+    
+    ShowSuDoKuScreen;
+    FullScreen;
+
+    menuItem := 1;
+	
+    repeat
+        if inputed then ivestas := TRUE;
+        FullScreen;
+
+        Langas(30, 3, 75, 23, 7, 1);
+        ShowSuDoKu(SDK);
+        
+        Langas(1, 1, 29, 25, 7, 1);
+        Menu(menuItem);
+        case menuItem of
+            0: viskas := TRUE;
+            1: begin
+               // liepti patvirtinti pasirinkima kad neprarastu sukurto SDK
+                   Langas(30, 3, 70, 23, 7, 1);
+                   InitSuDoKu(SDK);
+                   CreateSuDoKu(SDK, inputed);
+               end;
+            2: begin
+               // liepti patvirtinti pasirinkima kad neprarastu sukurto SDK
+                   Langas(30, 3, 75, 23, 6, 1);
+                   InputFromFile(SDK, inputed);
+               end;
+            3: begin
+                   Langas(30, 3, 75, 23, 7, 1);
+                 if ivestas
+                 then EditSuDoKu(SDK)
+                 else begin
+                   WriteLn('Pirma ivesk SuDoKu.');
+                   ReadLn;
+                 end;
+               end;
+            4: begin
+                  Langas(30, 3, 75, 23, 7, 1);
+                  if ivestas
+                  then Solve(SDK)
+                  else begin
+                      WriteLn('Pirma ivesk SuDoKu.');
+                      ReadLn;
+                  end;
+               end;
+            5: begin
+                  Langas(30, 3, 75, 23, 7, 1);
+                  if ivestas
+                  then SaveSuDoKu(SDK)
+                  else begin
+                     WriteLn('Pirma ivesk SuDoKu.');
+                     ReadLn;
+                  end;
+               end;
+        else WriteLn('Nepasirinko');
+        end;
+    until viskas;
+
+{
+    for i := 1 to 9 do
+    begin
+        for j := 1 to 9 do
+        begin
+            Write(SDK[i][j], ' ');
+        end;
+        WriteLn;
+    end;
+
+    ReadLn;
+}
+    Palaukti(500);
+End.

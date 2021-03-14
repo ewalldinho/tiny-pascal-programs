@@ -1,0 +1,799 @@
+Unit SuDoKu_API;
+
+interface
+
+    Uses CRT, GUI_Toolkit;
+
+    Type // number = [1..9];
+        SuDoKu_Row = array[1..9] of byte;
+        SuDoKu = array[1..9] of SuDoKu_Row;
+        
+        // tipai reikalingi Sudoku prendimui
+        SDK_BAibe = array[1..9] of boolean;
+        SolveTemplate = array[1..81] of SDK_BAibe;
+        
+        
+    // globalus 'sprendimo tinklelis'
+    var sTmp : SolveTemplate;
+    
+(***************  SuDoKu  GUI  ************************************************)
+
+  Procedure ShowSuDoKuScreen();
+  Procedure Menu(var m : integer);
+  Procedure DrawSuDoKuTable();
+  Procedure ShowSuDoKu(SDK : SuDoKu);
+    
+(*************  SuDoKu  valdymas  *********************************************)
+
+  // nunulina SuDoKu ([[0,0,0|0,0,0|0,0,0]x9)
+  Procedure InitSuDoKu(var SDK : SuDoKu);
+  Procedure CreateSuDoKu(var SDK : SuDoKu; var created : boolean);
+  Procedure EditSuDoKu(var SDK : SuDoKu);
+  Procedure SaveSuDoKu(SDK : SuDoKu);
+  
+  Procedure InputFromFile (var SDK : SuDoKu; var sdkIn : boolean);
+  Procedure InputFromKeyboard (var SDK : SuDoKu; var sdkIn : boolean);
+
+
+(*************  SuDoKu  sprendimas  *******************************************)
+  // gràþina kiek liko galimø variantø tame langelyje ir likusia reiksme jei 1
+  Function KiekLiko(x, y : byte; var sk : byte) : byte;
+  
+  Procedure InitSolveTemplate(SDK : SuDoKu);
+  
+  Procedure Solve(var SDK : SuDoKu);
+  // rekursyvi funkcija sprendiniui rasti
+  Function BruteForce(var SDK : SuDoKu; gIndex : byte) : boolean;
+  // patikrina ar uraðytos tinkamos reikðmës
+  Function IsValidSuDoKu(SDK : SuDoKu) : boolean;
+  // tikrina ar uþpildytas sudoku
+  Function Solved(SDK : SuDoKu) : boolean;
+
+
+
+{------------------------------------------------------------------------------}
+
+implementation
+
+
+  Procedure ShowSuDoKuScreen();
+        var i : integer;
+    begin
+        TextBackground(YELLOW);
+        TextColor(RED + BLINK);
+        ClrScr;
+        GoToXY(1, 3);
+        WriteLn('       ', #219,#219,#219,#219,#219, '                  ',                                  #220,#220,#220,#220,#220,#220,#220,#220, '                 ',#220,#220,#220,#220,#220, '   ', #220,#220,#220, '        ');
+        WriteLn('    ', #219,#223,#223,#223,#223,#223,#223,#223,#223,#223,#219, '                ',                   #219,#219,#219,#219,#219,#219,#219,#219,#219, '                ', #219,#219,#219, '   ', #222,#219, '         ');
+        WriteLn('   ', #222,#219,#221, '       ', #222, #219, #221, '               ',                                #219,#219,#219, '     ', #223,#219,#219, '              ', #219,#219,#219, '   ', #219,#221, '         ');
+        WriteLn('  ', #222,#219,#221, '        ', #223, #219, #223, '               ',                                #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#221, '        ');
+        WriteLn('   ', #222,#219,#221, '                         ',                                                   #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#219, '        ');
+        WriteLn('    ', #222,#219,#219,#219,#219,#219,#219,#221, '                   ',                               #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '   ', #219,#219, '         ');
+        WriteLn('      ', #222,#219,#219,#219,#219,#219,#219,#221, '    ',#177,#177,#177,'   ',#177,#177,#177,'    ', #219,#219,#219, '      ', #219,#219,#219, '    ', #178,#178,#178,#178, '     ', #219,#219,#219,#219,#219,#219,#219, '   ', #176,#176,#176, '   ', #176,#176,#176);
+        WriteLn('            ',                   #222,#219,#219, '    ', #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219,#219,#219,#219, '     ', #176,#176, '    ', #176,#176);
+        WriteLn('              ',                  #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, ' ', #219,#219,#219, '    ', #176,#176, '    ', #176,#176);
+        WriteLn('  ', #220,#219,#220, '         ', #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '   ', #219,#219, '   ', #176,#176, '    ', #176,#176);
+        WriteLn('  ', #222,#219,#221, '        ', #222,#219,#221, '   ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '     ', #220,#219,#219, '   ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '    ', #219,#219, '  ', #176,#176, '    ', #176,#176);
+        WriteLn('   ', #219,#220,#220,#220,#220,#220,#220,#220,#220,#220,#220,#219, '    ', #177,#177,#177,#177,#177,#177,#177,#177, '    ', #219,#219,#219,#219,#219,#219,#219,#219,#219, '     ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219, '   ', #222,#219, '   ', #176,#176,#176,#176,#176,#176,#176,#176);
+        WriteLn('     ', #219,#219,#219,#219,#219,#219,#219, '        ',  #177,#177,#177,#177, ' ', #177,#177,#177, '  ', #223,#223,#223,#223,#223,#223,#223,#223, '         ', #178,#178,#178,#178, '    ', #223,#223,#223,#223,#223 ,'  ', #223,#223,#223, '   ', #176,#176,#176,#176, ' ', #176,#176,#176);
+        WriteLn;
+        GoToXY(3, WhereY);
+        for i := 1 to 38 do Write(#219);
+        for i := 1 to 38 do Write(#223);
+        GoToXY(35, 20);
+        WriteLn('press [enter]');
+        ReadLn;
+    end;
+
+
+
+  Procedure Menu(var m : integer);
+        var total : integer;
+            done : boolean;
+        // procedura paþymëti menu punktui
+        procedure showMenu(select : integer);
+        begin
+
+            GoToXY(5, 3);
+            TextColor(BLUE);
+            WriteLn('- SuDoKu menu -');
+
+            if select = 1
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Create SuDoKu', 15, 5, 5);
+
+            if select = 2
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Load SuDoKu', 15, 5, 8);
+
+            if select = 3
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Edit SuDoKu', 15, 5, 11);
+
+            if select = 4
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Solve SuDoKu', 15, 5, 14);
+
+            if select = 5
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Save SuDoKu', 15, 5, 17);
+
+            if select = 0
+            then TextColor(RED)
+            else TextColor(BLUE);
+            DrawButton('Exit SuDoKu', 15, 5, 20);
+
+            TextColor(BLUE);
+        end;
+    begin
+        done := FALSE;
+        total := 5;
+        // turëtø jau bûti inicijuotas, bet patikrinam vistiek
+        if m < 1 then
+        begin
+             m := 1;
+        end;
+
+        repeat
+            showMenu(m);
+            case (GetKey) of
+                KEY_UP: begin
+                            m := m-1;
+                            if (m < 0) then m := total;
+                        end;
+                KEY_DOWN: begin
+                            m := m+1;
+                            if (m > total) then m := 0;
+                          end;
+               // KEY_LEFT: WriteLn('<-');
+               // KEY_RIGHT: WriteLn('->');
+                KEY_ENTER: if (m >= 0)
+                           then done := TRUE;
+                KEY_ESC: begin
+                            m := -1;
+                            done := TRUE;
+                         end;
+            end;
+
+        until done;
+    end;
+
+  Procedure DrawSuDoKuTable();
+    var x, y : integer;
+        NumBGColor, BGColor : byte;
+    begin
+        NumBGColor := WHITE;
+        BGColor := LightGray;
+        TextColor(BLACK);
+        ClrScr;
+
+        Write(#201);
+        for x := 1 to 35 do
+            if x mod 12 = 0
+            then Write(#203)
+            else Write(#205);
+        WriteLn(#187);
+
+        for y := 1 to 17 do
+        begin
+            if y mod 2 = 1 then
+            begin
+                for x := 1 to 36 do
+                    if (x-1) mod 4 <> 0           // atskiriami stulpeliai
+                    then begin
+                        TextBackground(NumBGColor);
+                        Write(' ');
+                        TextBackground(BGColor);
+                    end
+                    else
+                        if (x-1) mod 12 = 0
+                        then Write(#186)    // po 3 (Raðo ||)
+                        else Write(#179);   // po 1 (raðo |)
+                WriteLn(#186);
+            end
+            else begin
+                if y mod 6 = 0 then
+                begin
+                    Write(#204); // ||=
+                    for x := 1 to 17 do
+                        if x mod 6 = 0
+                        then Write(#205, #206)  // =||=
+                        else Write(#205, #205); // =
+                    WriteLn(#205, #185);  // =||
+                end
+                else begin
+                    Write(#186);  // #204 ||=
+                    for x := 1 to 35 do
+                        if x mod 12 = 0
+                        then Write(#186)  // #206 =||=
+                        else if x mod 4 = 0
+                             then Write(#197)    // raðo -|-
+                             else Write(#196);   // raðo -
+                    WriteLn(#186);  // #185 =||
+                end;
+            end;
+        end;
+
+        Write(#200);
+        For x := 1 to 35 do
+            if x mod 12 = 0
+            then Write(#202)
+            else Write(#205);
+        WriteLn(#188);
+    end;
+
+  Procedure ShowSuDoKu(SDK : SuDoKu);
+      var x, y : byte;
+    begin
+        DrawSuDoKuTable;
+        for y := 1 to 9 do
+            for x := 1 to 9 do
+            begin
+                GoToXY(X*4-1, Y*2);
+                if SDK[y][x] = 0
+                then Write(' ')
+                else Write(SDK[y][x]);
+            end;
+
+    end;
+
+(******************************************************************************)
+
+  Procedure InitSuDoKu(var SDK : SuDoKu);
+      var x, y : byte;
+    begin
+        for y := 1 to 9 do
+            for x := 1 to 9 do
+            begin
+                SDK[y][x] := 0;
+            end;
+    end;
+
+  Procedure CreateSuDoKu(var SDK : SuDoKu; var created : boolean);
+    begin
+        DrawSuDoKuTable;
+        InputFromKeyboard(SDK, created);
+    end;
+
+  Procedure EditSuDoKu(var SDK : SuDoKu);
+      var sudokuIn : boolean; // TRUE - nes jau editina
+    begin
+        DrawSuDoKuTable;
+        ShowSuDoKu(SDK);
+        InputFromKeyboard(SDK, sudokuIn);
+    end;
+
+  Procedure SaveSuDoKu(SDK : SuDoKu);
+      var failoPav : string;
+          F : text;
+          x, y, pavIlgis : byte;
+          key : word;
+          escape, enter : boolean;
+    begin
+        CursorOn;
+        failoPav := '';
+        pavIlgis := 0;
+        enter := FALSE;
+        escape := FALSE;
+        Write('Issaugoti kaip: ');
+        repeat
+            key := GetKey;
+            case key of
+              KEY_BACKSPACE: begin
+                 if (pavIlgis > 0)
+                 then begin
+                    delete(failoPav, length(failoPav), 1);
+                    GoToXY(WhereX-1, WhereY);
+                    ClrEol;
+                    pavIlgis := pavIlgis - 1;
+                 end;
+              end;
+
+             // KEY_LEFT: WriteLn('Left'); // pasirinkti ext: *.sdk | *.txt
+             // KEY_RIGHT: WriteLn('Right');
+              KEY_ENTER: enter := TRUE;
+              KEY_ESC: escape := TRUE;
+              else begin
+                if key in [Ord('A')..Ord('Z'), Ord('a')..Ord('z'), Ord('0')..Ord('9')]
+                then begin
+                    Write(Char(key));
+                    failoPav := failoPav + Char(key);
+                    pavIlgis := pavIlgis + 1;
+                end;
+              end;
+            end;
+        until escape or enter;
+
+        WriteLn;
+
+        if enter then
+        begin
+            failoPav := failoPav + '.sdk';
+
+            Assign(F, failoPav);
+            {$I-}
+            Rewrite(F);
+            {$I+}
+            if IOResult = 0
+            then begin
+                for y := 1 to 9 do
+                begin
+                    for x := 1 to 9 do
+                    begin
+                        Write(F, SDK[x][y], ' ');
+                    end;
+                    WriteLn(F);
+                end;
+                Close(F);
+                WriteLn('SuDoKu issaugotas faile: "', failoPav, '".');
+            end
+            else WriteLn('Klaida! SuDoKu issaugoti nepavyko.');
+        end
+        else WriteLn('Veiksmas atsauktas...');
+
+        WriteLn('[enter]');
+        ReadLn;
+        CursorOff;
+    end;
+
+
+
+  Procedure InputFromFile (var SDK : SuDoKu; var sdkIn : boolean);
+      var fSDK : text;
+          failoPav : string;
+          x, y : byte;
+          exts : ExtsType;
+    begin
+
+        exts[1] := 'sdk';
+        exts[2] := 'txt';
+        SelectFile(failoPav, exts, 512);
+
+        if failoPav = ''
+        then begin
+            GoToXY(2, WhereY + 2);
+            TextColor(BLACK);
+            WriteLn('Operacija atsaukta...');
+            sdkIn := FALSE;
+        end
+        else begin
+            Assign(fSDK, failoPav);
+            {$I-}
+            Reset(fSDK);
+            {$I+}
+            if (IOResult <> 0)
+            then begin
+                GoToXY(2, WhereY + 2);
+                TextColor(BLACK);
+                WriteLn('Nepavyko atverti SuDoKu failo "', failoPav, '".');
+                sdkIn := FALSE;
+            end
+            else begin
+                while not Eof(fSDK) do
+                begin
+                    for y := 1 to 9 do
+                    begin
+                        for x := 1 to 9 do
+                            Read(fSDK, SDK[y][x]);
+                        ReadLn(fSDK);
+                    end;
+                end;
+                Close(fSDK);
+                GoToXY(2, WhereY + 2);
+                TextColor(BLACK);
+                Write(' SuDoku sekmingai nuskaitytas.');
+                sdkIn := TRUE;
+            end;
+        end;
+        WriteLn('  [enter]');
+        ReadLn;
+    end;
+
+  Procedure InputFromKeyboard (var SDK : SuDoKu; var sdkIn : boolean);
+        var X, Y : byte;
+            key : smallint;
+            done : boolean;
+    begin
+        X := 1;
+        Y := 1;
+        done := FALSE;
+        sdkIn := FALSE;
+
+        // kursorius tampa staèiakampis (kaip insert)
+        CursorBig;
+        // vykdomas ávedimas
+        repeat
+            GoToXY(X*4-1, Y*2);
+            key := GetKey;
+            case (key) of
+                KEY_UP: begin
+                            Y := Y-1;
+                            if (Y < 1) then Y := 9;
+                        end;
+                KEY_DOWN: begin
+                            Y := Y+1;
+                            if Y > 9 then Y := 1;
+                          end;
+                KEY_LEFT: begin
+                             X := X - 1;
+                             if X < 1 then X := 9;
+                          end;
+                KEY_RIGHT: begin
+                             X := X + 1;
+                             if X > 9 then X := 1;
+                           end;
+                KEY_ENTER: begin
+                             done := TRUE;
+                             sdkIn := TRUE;
+                           end;
+                KEY_ESC: begin
+                            done := TRUE;
+                            sdkIn := FALSE;
+                         end;
+                32, 48: begin
+                            Write(' ');
+                            SDK[Y][X] := 0;
+                        end;
+                49..57: begin
+                            Write(char(key));
+                            SDK[Y][X] := key - 48;
+                        end;
+            end;
+
+        until done;
+        CursorOff;
+    end;  // ivedimo
+
+
+(******************************************************************************)
+
+  // gràþina kiek liko galimø variantø tame langelyje ir likusia reiksme jei 1
+  Function KiekLiko(x, y : byte; var sk : byte) : byte;
+        var i, kiek, index : byte;
+    begin
+        sk := 0;
+        kiek := 0;
+        index := (y-1)*9+x;
+        for i := 1 to 9 do
+            if sTmp[index][i]
+            then begin
+                kiek := kiek + 1;
+                sk := i;
+            end;
+        if kiek > 1 then sk := 0;
+        KiekLiko := kiek;
+    end;
+    
+  Function HasVariant(index, v : byte) : boolean;
+    begin
+        HasVariant := sTmp[index][v];
+    end;
+    
+  Procedure MarkVariant(index, v : byte);
+        var i : byte;
+    begin
+        for i := 1 to 9 do
+            if i = v
+            then sTmp[index][i] := TRUE
+            else sTmp[index][i] := FALSE;
+    end;
+    
+  Procedure InitSolveTemplate(SDK : SuDoKu);
+       var x, y, i : byte;
+    begin
+        // nustatomos pradinës reikðmës
+        for y := 1 to 81 do
+            for x := 1 to 9 do
+                sTmp[y][x] := TRUE;
+        // pakeièiamos pagal sudoku reikðmes
+        for y := 1 to 9 do
+            for x := 1 to 9 do
+                if SDK[y][x] > 0
+                then MarkVariant((y-1)*9+x, SDK[y][x]);
+    end;
+    
+  Procedure EliminateVariants(SDK : SuDoKu; x, y : byte);
+        var row,col, i,j, qX,qY, index : byte;
+    begin
+        col := x;
+        row := y;
+        index := (y-1)*9 + x;
+        
+        // tikrina eilute
+        for i := 1 to 9 do
+        begin
+            if (SDK[row][i] > 0) and (i <> col)
+            then sTmp[index][SDK[row][i]] := FALSE;
+        end;
+
+        // tikrina stulpeli
+        for i := 1 to 9 do
+        begin
+            if (SDK[i][col] > 0) and (i <> row)
+            then sTmp[index][SDK[i][col]] := FALSE;
+        end;
+
+        qY := ((y-1) div 3 +1) *3;
+        qX := ((x-1) div 3 +1) *3;
+
+        // tikrina kvadrateli
+        for j := qY-2 to qY do
+            for i := qX-2 to qX do
+            begin
+                if (SDK[j][i] > 0) and ((i <> col) AND (j <> row))
+                then sTmp[index][SDK[j][i]] := FALSE;
+            end;
+    end;
+
+  Procedure CheckIfOnePossible(SDK : SuDoKu; x, y : byte);
+      var i,j, v,theOne, qX,qY, index : byte;
+          onlyR, onlyC, onlyQ : boolean;
+    begin
+        index := (y-1)*9 + x;
+
+        for v := 1 to 9 do
+            if hasVariant(index, v)   // sTmp[index][SDK[row][i]])
+            then begin
+                onlyR := TRUE;
+                onlyC := TRUE;
+                onlyQ := TRUE;
+
+                // patikrinti eilute
+                i := 1;
+                while (i <= 9) and onlyR do
+                begin
+                    if hasVariant((y-1)*9+i, v) and (i<>x)
+                    then onlyR := FALSE;
+                    i := i+1;
+                end;
+
+                if not onlyR
+                then begin
+                    // patikrinti stulpeli
+                    i := 1;
+                    while (i <= 9) and onlyC do
+                    begin
+                        if hasVariant((i-1)*9+x, v) and (i<>y)
+                        then onlyC := FALSE;
+                        i := i+1;
+                    end;
+                end;
+                
+                if  not (onlyR OR onlyC)
+                then begin
+                    qY := ((y-1) div 3 +1) *3;
+                    qX := ((x-1) div 3 +1) *3;
+                    // patikrinti kvadrateli
+                    j := qY-2;
+                    while (j <= qY) and onlyQ do
+                    begin
+                        for i := qX-2 to qX do
+                            if hasVariant((j-1)*9+i, v) and ((i <> x) OR (j <> y))
+                            then onlyQ := FALSE;
+                        j := j + 1;
+                    end;
+                end;
+
+                if onlyR OR onlyC OR onlyQ
+                then begin
+                    MarkVariant(index, v);
+                 //   theOne := v;
+                 //   WriteLn('theOne: ', theOne, '  at (', x,',',y, ')');
+                 //   ReadLn;
+                end;
+            end;
+    end;
+    
+  Function Minimal(index : byte; var min : byte) : boolean;
+      var i : byte;
+          found : boolean;
+    begin
+        found := FALSE;
+        while (min < 9) and (not found) do
+        begin
+            min := min + 1;  // jei buvo 3, tai prades nuo 4
+            if sTmp[index][min]
+            then found := TRUE;
+        end;
+        if found
+        then Minimal := TRUE
+        else Minimal := FALSE;
+    end;
+    
+  Function BruteForce(var SDK : SuDoKu; gIndex : byte) : boolean;
+      var gX, gY : byte;
+          min : byte;
+          isMin, valid, BF : boolean;
+    begin
+        gX := (gIndex-1) mod 9 + 1;
+        gY := (gIndex-1) div 9 + 1;
+        
+        WriteLn('gIndex: ', gIndex, ',   (', gX, ',', gY, ')') ;
+
+        if gIndex = 81
+        then begin
+            if SDK[gY][gX] = 0
+            then begin
+                min := 0;
+                repeat
+                    isMin := Minimal(gIndex, min);
+                    if isMin
+                    then begin
+                        SDK[gY][gX] := min;
+                        valid := IsValidSuDoKu(SDK);
+                    end;
+                until valid or (not isMin);
+                (* atvejis kai BF := TRUE yra, kai
+                 * isValid(SDK) and gIndex=81 and  isMin = TRUE
+                 *)
+                if valid and isMin
+                then BF := TRUE
+                else begin
+                    SDK[gY][gX] := 0;  // gràþinam pradinæ reikðmæ
+                    BF := FALSE;
+                end;
+            end
+            else begin
+                (* atvejis kai BF := TRUE yra, kai
+                 *  gIndex=81 and isValid(SDK) and SDK[Y][X] > 0
+                 *)
+                BF := TRUE;
+            end;
+        end
+        else begin
+            if SDK[gY][gX] = 0
+            then begin
+                min := 0;
+                // ciklas spëti dar kart, jei prieð tai nepavyko
+                repeat
+                    repeat
+                        isMin := Minimal(gIndex, min);
+                        if isMin
+                        then begin
+                            SDK[gY][gX] := min;
+                            valid := IsValidSuDoKu(SDK);
+                        end;
+                    until valid or (not isMin);
+
+                  if valid and isMin
+                    then BF := BruteForce(SDK, gIndex+1)
+                    else begin
+                        SDK[gY][gX] := 0;  // gràþinam pradinæ reikðmæ
+                        BF := FALSE;
+                    end;
+                until BF or (not isMin);
+            end
+            else begin
+                BF := BruteForce(SDK, gIndex+1);
+            end;
+        end;
+        // gràþina ar kà pavyko padaryti su iki ðiol spëtomis reikðmëmis
+        // t.y. ar ta seka buvo tinkama ar ne.
+
+        if not BF then WriteLn(' FAIL: ', gIndex)
+        else  WriteLn(' OK: ', gIndex);
+
+        BruteForce := BF;
+    end;
+
+  Procedure Solve(var SDK : SuDoKu);
+      var rasta : boolean;
+          x, y, liko, sk : byte;
+    begin
+        repeat
+            rasta := FALSE;
+            WriteLn(' ciklas rasti ');
+            for y := 1 to 9 do
+                for x := 1 to 9 do
+                    if SDK[y][x] = 0
+                    then begin
+                        EliminateVariants(SDK, x, y);
+                        CheckIfOnePossible(SDK, x, y);
+                        liko := KiekLiko(x, y, sk);
+                        if liko = 1
+                        then begin
+                          //  WriteLn(' liko: ', sk,' at(', x, ',', y,') ');
+                            SDK[y][x] := sk;
+                            rasta := TRUE;
+                        end;
+                    end;
+            if not rasta
+            then WriteLn('exit')
+            else WriteLn('repeat ');
+        until not rasta;
+        
+        WriteLn('Spresta kiek galeta.');
+        ReadLn;
+    end;
+    
+    
+  Function Check(SDK : SuDoKu; nr : byte) : boolean;
+      var quadX, quadY, i, j : byte;
+          numbs : array[1..9] of boolean;
+    begin
+        Check := TRUE;
+        for i:= 1 to 9 do
+            numbs[i] := FALSE;
+        // tikrina eilute
+        for i := 1 to 9 do
+            if SDK[nr][i] > 0
+            then
+                if numbs[SDK[nr][i]]
+                then Check := FALSE
+                else numbs[SDK[nr][i]] := TRUE;
+
+        for i:= 1 to 9 do
+            numbs[i] := FALSE;
+        // tikrina stulpeli
+        for i := 1 to 9 do
+            if SDK[i][nr] > 0
+            then
+                if numbs[SDK[i][nr]]
+                then Check := FALSE
+                else numbs[SDK[i][nr]] := TRUE;
+
+        for i:= 1 to 9 do
+            numbs[i] := FALSE;
+        quadY := (nr-1) div 3 + 1;
+        quadX := (nr-1) mod 3 + 1;
+
+        // tikrina kvadrateli
+        for i := quadX*3-2 to quadX*3 do
+            for j := quadY*3-2 to quadY*3 do
+            begin
+                if SDK[i][j] > 0
+                then
+                    if numbs[SDK[i][j]]
+                    then begin
+                        Check := FALSE;
+                    end
+                    else numbs[SDK[i][j]] := TRUE;
+            end;
+    end;
+
+  Function IsValidSuDoKu(SDK : SuDoKu) : boolean;
+      var tikrina : boolean;
+          zone : byte;
+    begin
+        zone := 1;
+        tikrina := TRUE;
+        IsValidSuDoKu := TRUE; // tarkim
+
+        while tikrina do
+        begin
+            if not check(SDK, zone)
+            then begin
+                tikrina := FALSE;
+                IsValidSuDoKu := FALSE;
+            end;
+            zone := zone + 1;
+            if zone > 9
+            then tikrina := FALSE;
+        end;
+    end;
+
+  // tikrina ar uþpildytas sudoku
+  Function Solved(SDK : SuDoKu) : boolean;
+        var x, y, left : byte;  // left - kiek sk. trûksta iki uþpildymo
+    begin
+      left := 0;
+      for y := 1 to 9 do
+        for x := 1 to 9 do
+          if (SDK[y][x] = 0)
+          then left := left + 1;
+      if left > 0
+      then Solved := FALSE
+      else Solved := TRUE;
+    end;
+
+
+
+begin
+
+end.
+

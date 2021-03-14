@@ -1,0 +1,39 @@
+Unit SuDoKu_Global;
+
+interface
+
+  Const TITLE = 1;
+        PRESS_ENTER = 1000;
+        SuDoKu_FIRST = 1001;
+        NOT_SELECTED = 1002;
+
+
+  Function LT_Word(code : word) : string;
+  Function EN_Word(code : word) : string;
+
+{----------------------------------------------}
+
+implementation
+
+  Function LT_Word(code : word) : string;
+    begin
+        case code of
+          TITLE: LT_Word := 'SuDoKu sprendejas';
+        else LT_Word := 'fraze nerasta';
+        end;
+    end;
+    
+  Function EN_Word(code : word) : string;
+    begin
+        case code of
+          TITLE: EN_Word := 'SuDoKu solver';
+        else EN_Word := 'phrase not found';
+        end;
+    end;
+
+    
+{----------------------------------------------}
+
+begin
+end.
+
