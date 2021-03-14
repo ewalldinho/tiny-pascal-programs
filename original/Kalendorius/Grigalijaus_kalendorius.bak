@@ -1,0 +1,46 @@
+Program datos;
+  Type metai = 1583..5000;
+       menuo = 1..12;
+       diena = 1..31;
+       data = record
+                m : metai;
+                mn : menuo;
+                d : diena;
+              end;
+              
+  Function kel (m : metai): boolean;  // ar metai 'm' keliamieji
+    begin
+      kel := (m mod 400 = 0) or
+             (m mod 100 <> 0) and (m mod 4 = 0)
+// si funkcija tinka tik Grigalijaus kalendoriui, naudojamam daugelyje saliu
+    end;  // kel
+
+  Function dmen (m : metai; mn : menuo) : integer;
+                  // kiek dienu turi 'm' m. mn menuo
+    begin
+      if (mn = 4) or (mn =  6) or
+         (mn = 9) or (mn = 11)
+        then dmen := 30
+        else if mn = 2
+                then if kel(m) then dmen := 29
+                               else dmen := 28
+                else dmen := 31;
+    end;  // dmen
+  Procedure rasyti (d : data);
+    begin
+      Write (d.m,                            // metai
+             (d.mn div 10):2, d.mn mod 10:1, // menuo
+              d.d div 10: 2, d.d mod 10: 1)
+    end;  //rasyti
+  var d : data;
+Begin
+  Write ('  Metai: ');  ReadLn(d.m);
+  Write ('  menuo: ');  ReadLn(d.mn);
+  Write ('  diena:');   ReadLn(d.d);
+  Rasyti(d);
+  WriteLn;
+  If kel(d.m) then writeln(d.m, 'm. - keliamieji.')
+              else writeLn(d.m, 'm. - nekeliamieji.');
+  
+  Readln
+End.
