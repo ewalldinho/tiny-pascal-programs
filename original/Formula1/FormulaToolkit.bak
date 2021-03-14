@@ -1,0 +1,883 @@
+program Formula_1;
+
+    Uses CRT, FormulaCar, FormulaTrack;
+
+    Const // klaviðai
+          KEY_UP     = $F072;
+          KEY_LEFT   = $F075;
+          KEY_RIGHT  = $F077;
+          KEY_DOWN   = $F080;
+          KEY_BSPACE = $0008;
+          KEY_TAB    = $0009;
+          KEY_ENTER  = $0013;
+          KEY_ESC    = $0027;
+          KEY_SPACE  = $0032;
+
+          TRAFFIC_SIZE = 24;
+          CAR_LENGTH = 7;
+          CAR_WIDTH = 6;
+
+          MY_CAR_COLOR = RED;
+          NUM_OF_COLORS = 7;
+          COLORS : array[1..NUM_OF_COLORS] of byte = (Blue, Green, Cyan, Red, Magenta, Brown, LightGray);
+          OPTION_SELECT = LightGreen;
+          MENU_COLOR = White;
+          MENU_BACK_COLOR = Black;
+          MENU_SELECT = Yellow;
+          
+          NUM_OF_OPPONENTS = 20;
+          MAX_SPEED = 10;
+          SPEEDS : array[1..MAX_SPEED] of Word = (300, 200, 150, 100, 80, 60, 50, 40, 30, 20);
+
+          
+    Type Traffic = array[1..TRAFFIC_SIZE] of CarType; // 0 - mano, 1..N kompas
+         JuostuAibe = set of 0..3;
+
+
+  // nupieðia mygtukà
+  Procedure DrawButton(btnTitle : string; width, startX, startY : integer);
+      var i, ilgis, spaces : integer;
+          xSpace : boolean;
+    begin
+        ilgis := length(btnTitle);
+        if (ilgis > width) then
+        begin
+            btnTitle := copy(btnTitle, 1, width);
+            ilgis := length(btnTitle);
+        end;
+        spaces := width-ilgis;
+        if spaces mod 2 = 0 then xSpace := FALSE
+                            else xSpace := TRUE;
+        spaces := spaces div 2;
+
+        GoToXY(startX, startY);
+        Write(#201); for i := 1 to width do Write(#205); Write(#187);
+
+        GoToXY(startX, startY+1);
+        Write(#186);
+        for i := 1 to spaces do
+            Write(' ');
+        Write(btnTitle);
+        for i := 1 to spaces do
+            Write(' ');
+        if xSpace then Write(' ');
+        Write(#186);
+
+        GoToXY(startX, startY+2);
+        Write(#200); for i := 1 to width do Write(#205); Write(#188);
+    end;
+
+  Procedure DrawOption(title : string; width, startX, startY : integer);
+       var i, ilgis, spaces : integer;
+    begin
+        ilgis := length(title);
+        if (ilgis > width) then
+        begin
+            title := copy(title, 1, width);
+            ilgis := length(title);
+        end;
+        spaces := width-ilgis;
+
+       { GoToXY(startX, startY);
+        WriteLn('.'); for i := 1 to width do Write('_'); Write('.'); }
+
+        GoToXY(startX, startY+1);
+        for i := 1 to spaces do
+            Write(' ');
+        Write(title);
+        Write(' ');
+
+        GoToXY(startX, startY+2);
+        for i:= 1 to spaces-1 do
+            Write(' ');
+        for i:= spaces to width do
+            Write('-');
+    end;
+    
+  // nuskaito paspaustà klaviðà ir gràþina vienà ið konstantø arba simbolio kodà
+  Function GetKey() : longint;
+        var key : char;
+     begin
+         key := ReadKey;
+         case key of
+           #0: begin
+                key := ReadKey;
+                case key of
+                  #72: GetKey := KEY_UP;    { Up }
+                  #75: GetKey := KEY_LEFT;  { Left }
+                  #77: GetKey := KEY_RIGHT; { Right }
+                  #80: GetKey := KEY_DOWN;  { Down }
+                  else GetKey := 0;
+                end;
+           end;
+           #8: GetKey := KEY_BSPACE;    { BackSpace }
+           #9: GetKey := KEY_TAB;       { TAB }
+           #13: GetKey := KEY_ENTER;    { ENTER }
+           #27: GetKey := KEY_ESC;      { Esc }
+           else GetKey := Ord(key);
+         end;
+     end;
+     
+  Procedure ClearInputBuffer();
+    begin
+        while KeyPressed do
+            ReadKey;
+    end;
+
+  // gràþina atsitiktinæ juostà 0-3
+  Function GetRandomLane(numOfLanes : byte; genLanes : JuostuAibe) : byte;
+      var lane : byte;
+    begin
+        repeat
+            lane := Random(numOfLanes);
+            WriteLn('  lane: ', lane);
+            WriteLn('  numOfLane: ', numOfLanes);
+        until not (lane in genLanes);
+        GetRandomLane := lane;
+    end;
+
+  Procedure InitMyCar(var mCar : CarType; color : byte);
+    begin
+        mCar := NewCar(21, 25-CAR_LENGTH+1, CAR_LENGTH, CAR_WIDTH, color, BLACK);
+    end;
+
+  Procedure InitTrafficCars(var cars : Traffic; length, width, distance : byte; track : TrackType);
+     var i, posY : integer; posX, lane : byte;
+         lanes : JuostuAibe;
+  begin
+      lanes := []; // tuðèia
+      posY := 1;
+      for i := 1 to TRAFFIC_SIZE do
+      begin
+          // generuojama nauja formuliø grupë:
+          // 1-oje eilëje, po 1/2/3 formules
+          if (i-1) mod (track.lanes-1) = 0
+          then begin
+              lanes := [];
+              posY := posY - length;
+          end;
+          if ((i-1) mod (track.lanes-1) = 0) and (i <> 1)
+          then posY := posY - distance;
+          
+          lane := GetRandomLane(track.lanes, lanes);
+          lanes := lanes + [lane];  // pridedama naujas elementas á aibæ
+          
+          posX := GetLeftBound(track) + lane * width + 1;
+         // posY := posY - length;
+          cars[i].posX := posX;
+          cars[i].posY := posY;
+          cars[i].length := length-1;
+          cars[i].width := width-1;
+          cars[i].color := BLUE;// GetRandomColor();
+          cars[i].clearColor := BLACK;
+      end;
+  end;
+  
+  Procedure ClearCars(cars : Traffic);
+    var i : byte;
+  begin
+      for i := 1 to TRAFFIC_SIZE do
+          ClearCar(cars[i]);
+  end;
+  
+  Procedure DrawCars(cars : Traffic);
+     var i : byte;
+  begin
+      for i := 1 to TRAFFIC_SIZE do
+          DrawCar(cars[i]);
+  end;
+  
+  Procedure MoveCars(var cars : Traffic; lanes : byte);
+    var i,j, n : byte;
+  begin
+      i := 1;
+      lanes := lanes - 1;  // nes lanes = 2, 3, 4
+
+      while i <= TRAFFIC_SIZE do
+      begin
+          for j := i to i+lanes-1 do
+          begin
+              cars[j].posY := cars[j].posY + 1;
+              if cars[j].posY = 26 // iðvaþiavo ið ekrano
+              then begin
+                  // parenkama paskutinë formule
+                  if (i = 1) then n := TRAFFIC_SIZE
+                  else n := i-lanes;
+                  cars[j].posY := cars[n].posY - 3*(cars[j].length+1)
+              end;
+          end;
+          i := i + lanes;
+      end;
+  end;
+  
+  Procedure RunTraffic(var cars : Traffic; lanes : byte);
+    begin
+        ClearCars(cars);
+        MoveCars(cars, lanes);
+        DrawCars(cars);
+    end;
+  
+  
+  Procedure MoveLeft(var car : CarType; track : TrackType);
+  begin
+      if (car.posX > GetLeftBound(track)+car.width+1)
+      then car.posX := car.posX - (car.width+1);
+  end;
+  
+  Procedure MoveRight(var car : CarType; track : TrackType);
+  begin
+      if (car.posX+car.width < GetRightBound(track)-car.width-1)
+      then car.posX := car.posX + (car.width+1);
+  end;
+  
+  Procedure MoveUp(var car : CarType; track : TrackType);
+  begin
+      if (car.posY > 1)
+      then car.posY := car.posY - 1;
+  end;
+  
+  Procedure MoveDown(var car : CarType; track : TrackType);
+  begin
+      if (car.posY+car.length < 25)
+      then car.posY := car.posY + 1;
+  end;
+  
+  
+  Function CheckCollision(car : CarType; cars : Traffic) : boolean;
+      var i : byte;
+          boom : boolean;
+    begin
+        boom := FALSE;
+        for i := 1 to TRAFFIC_SIZE do
+            if cars[i] ** car then boom := TRUE;
+        
+        CheckCollision := boom;
+    end;
+    
+  Function CheckFinished(car : CarType; fLine : FinishLineType) : boolean;
+    begin
+        if fLine.posY > car.posY
+        then CheckFinished := TRUE
+        else CheckFinished := FALSE;
+    end;
+  
+  
+  Procedure WaveFinishLine();
+    begin
+
+    end;
+  
+  Function ConfirmCrashDialog(lifes : byte) : boolean;
+      var done : boolean;
+          key : longint;
+          select, i, j, height, width : byte;
+
+      procedure YesNoButton(selected : boolean; title : string; x, y : byte);
+          var bWidth, i : byte;
+        begin
+            bWidth := Length(title) +2;
+            // iðvalomas senas
+            TextBackground(RED);
+            GoToXY(x, y);
+            for i := 1 to bWidth+1 do
+                Write(' ');
+            GoToXY(x+1, y+1);
+            for i := 1 to bWidth do
+                Write(' ');
+            // pieðiamas naujas
+            if selected
+            then begin
+                TextBackground(BLUE);
+                TextColor(YELLOW);
+                GoToXY(x+1, y);
+                Write(' ', title, ' ');
+            end
+            else begin
+                TextColor(BLACK);
+                GoToXY(x, y);
+                for i := 1 to bWidth do
+                    Write(' ');
+                Write(#220);
+                GoToXY(x+1, y+1);
+                for i := 1 to bWidth do
+                    Write(#223);
+
+                TextBackground(BLUE);
+                TextColor(WHITE);
+                GoToXY(x    , y);
+                Write(' ', title, ' ');
+            end;
+        end;
+    begin
+        done := FALSE;
+        height := 11;
+        width := 30;
+        select := 1;
+        
+        Window(19, 4, 19+width+2, 4+height+2);
+        TextBackground(White);
+        ClrScr;
+        Window(20, 5, 20+width, 5+height);
+        TextBackground(RED);
+        ClrScr;
+        TextColor(MENU_COLOR);
+
+//        if posX + width > 80 then width := 80 - posX;
+//        Langas(posX, posY, posX+width, posY+height, GREEN, WHITE);
+        Write(#201);
+        for i := 1 to width-1 do
+            Write(#205);
+        Write(#187);
+        GoToXY(1,2);
+        for j := 1 to height-1 do
+            begin
+                Write(#186);
+                for i := 1 to width-1 do
+                    Write(' ');
+                Write(#186);
+            end;
+        GoToXY(1, height);
+        Write(#200);
+        for i := 1 to width-1 do
+            Write(#205);
+        Write(#188);
+        GoToXY(1, height+1);
+        Write(' Use: '+ #24#25#27#26 +' or TAB');
+
+        GoToXY(3, 3);
+        Write('You have crashed your car!');
+        GoToXY(3, 5);
+        Write('Do you want to restart?');
+
+        repeat
+            YesNoButton(select=1, 'Restart', 4, 7);
+            YesNoButton(select=2, 'Main Menu', 4, 9);
+
+            key := GetKey();
+            case key of
+              KEY_UP: select := 1;
+              KEY_DOWN: select := 2;
+              KEY_ENTER: done := TRUE;
+              KEY_LEFT: select := 1;
+              KEY_RIGHT: select := 2;
+              KEY_TAB: if select = 1 then select := 2
+                       else select := 1;
+              KEY_ESC: begin
+                           select := 1;
+                           done := TRUE;
+                       end;
+            end;
+        until done;
+
+        ConfirmCrashDialog := select = 1;
+    end;
+    
+  Procedure ShowLostInfo(totalScore, score : word);
+    begin
+        Window(19, 4, 51, 20);
+        TextBackground(White);
+        ClrScr;
+        Window(20, 5, 50, 19);
+        TextBackground(RED);
+        ClrScr;
+        TextColor(White);
+        WriteLn;
+        WriteLn('  You have LOST the race!');
+        WriteLn;
+        WriteLn('  Your score is ');
+        WriteLn('     Level score: ', score);
+        WriteLn('     Total score: ', totalScore);
+        WriteLn;
+        TextColor(MENU_SELECT);
+        DrawButton('OK', 6, WhereX + 4, WhereY);
+        repeat
+        //...
+        until GetKey = KEY_ENTER;
+    end;
+
+    
+  Procedure ShowFinishInfo(var totalScore : word; score, bonus : word; speed : byte);
+    begin
+        Window(19, 4, 51, 20);
+        TextBackground(White);
+        ClrScr;
+        Window(20, 5, 50, 19);
+        TextBackground(Brown);
+        ClrScr;
+        TextColor(White);
+        WriteLn;
+        WriteLn('  You have finished race ');
+        WriteLn;
+        WriteLn('  Your score is ');
+        WriteLn('    Driving: ', score);
+        WriteLn('      Speed: ', speed);
+        WriteLn('      Bonus: ', bonus);
+        WriteLn('  Total score: ', totalScore);
+        WriteLn('  ------------------');
+        WriteLn('   New score: ', totalScore + score + bonus);
+        WriteLn;
+        TextColor(MENU_SELECT);
+        DrawButton('OK', 6, WhereX + 4, WhereY);
+        repeat
+        //...
+        until GetKey = KEY_ENTER;
+    end;
+  
+  Procedure ShowChampInfo(var totalScore : word; score, bonus : word; speed : byte);
+    begin
+        Window(17, 4, 51, 21);
+        TextBackground(White);
+        ClrScr;
+        Window(18, 5, 50, 20);
+        TextBackground(Brown);
+        ClrScr;
+        TextColor(White);
+        WriteLn;
+        WriteLn('        CONGRATULATIONS!!! ');
+        WriteLn(' You have finished championship');
+        WriteLn;
+        WriteLn('  Your score is ');
+        WriteLn('    Driving: ', score);
+        WriteLn('      Speed: ', speed);
+        WriteLn('      Bonus: ', bonus);
+        WriteLn('  ------------------');
+        WriteLn('  Total score: ', totalScore);
+        WriteLn('  ------------------');
+        WriteLn('  Final score: ', totalScore + score + bonus);
+        WriteLn;
+        TextColor(MENU_SELECT);
+        DrawButton('OK', 6, WhereX + 4, WhereY);
+        repeat
+        //...
+        until GetKey = KEY_ENTER;
+    end;
+  
+  Procedure DrawStatsWindow();
+    begin
+        Window(54, 3, 76, 23);
+        TextBackground(WHITE);
+        ClrScr;
+        Window(55, 4, 75, 22);
+        TextBackground(YELLOW);
+        TextColor(BLACK);
+        ClrScr;
+    end;
+    
+  Procedure ShowStats(nick : string; gone, speed, lives : byte; score : word);
+  begin
+      DrawStatsWindow;
+      WriteLn;
+      WriteLn('  ', nick);
+      WriteLn('----------------');
+      WriteLn('   Score: ', score);
+      WriteLn;
+      WriteLn('   Gone: ', gone);
+      WriteLn;
+      WriteLn('   Speed: ', speed);
+      WriteLn;
+      WriteLn('   Lifes: ', lives);
+  end;
+
+(******************************************************************************)
+  
+  Procedure DrawLogo();
+      var logo : array[1..11] of string;
+          i, j : byte;
+    begin
+        logo[1] := '    ||||||||||           _|||| TM ';
+        logo[2] := '    ||||||||"          ]|||||| ';
+        logo[3] := '   ]||||[              ||||||[ ';
+        logo[4] := '   ]||||[                ||||[ ';
+        logo[5] := '   ||||||||[    ||||[   ]||||  ';
+        logo[6] := '   |||||||"    ]||||    ]||||  ';
+        logo[7] := '  ]||||[                ||||[  ';
+        logo[8] := '  ]||||[                ||||[  ';
+        logo[9] := ' ]||||||[             ]||||||[ ';
+       logo[10] := ' _____________________________ ';
+       logo[11] := ' """""""""""""""';
+       
+
+        TextColor(LightRed);
+        for i := 1 to 11 do
+        begin
+            for j := 1 to Length(logo[i]) do
+            begin
+                case logo[i][j] of
+                  ']': Write(#222);
+                  '|': Write(#219);
+                  '[': Write(#221);
+                  '"': Write(#223);
+                  '_': Write(#220);
+                else Write(logo[i][j]);
+                end;
+            end;
+            WriteLn;
+        end;
+    end;
+  
+  Procedure PlayGame(name : string; color, trackMode, speed : byte);
+     var cars : Traffic;
+         tr : TrackType;
+         fl : FinishLineType;
+         myCar : CarType;
+         done, finish, crash, paused, escape : boolean;
+         code : longint;
+         gone, counter, score, totalScore, lifes : word;
+    begin
+        Randomize;
+        // inicijuoja kintamuosius
+        totalScore := 0;
+        lifes := 3;
+        paused := FALSE;
+        done := FALSE;
+        escape := FALSE;
+
+        // pagrindinis ciklas
+        repeat
+            crash := FALSE;
+            finish := FALSE;
+            counter := 0;
+            gone := 0;
+            score := 0;
+        
+            InitTrack(tr, 20, CAR_WIDTH, trackMode+1);
+            fl := NewFinishLine(White, Black, 2, tr);
+            InitMyCar(myCar, color);
+            //              cars,  ilgis,     plotis,     atstumas,  trasa
+            InitTrafficCars(cars, CAR_LENGTH, CAR_WIDTH, CAR_LENGTH*2, tr);
+            DrawTrack(tr);
+            DrawCar(myCar);
+            DrawCars(cars);
+
+            // lenktyniø ciklas
+            repeat
+                // clear, move, draw cars
+                RunTraffic(cars, tr.lanes);
+
+                counter := counter + 1;
+                gone := (counter-11) div (3*CAR_LENGTH);
+                score := gone * trackMode * 10;
+                crash := CheckCollision(myCar, cars);
+
+                ClearCar(myCar);
+
+                // handle action
+                if KeyPressed
+                then begin
+                    code := GetKey;
+                    case code of
+                    KEY_LEFT: MoveLeft(myCar, tr);
+                    KEY_RIGHT: MoveRight(myCar, tr);
+                    KEY_UP: MoveUp(myCar, tr);
+                    KEY_DOWN:  MoveDown(myCar, tr);
+                    KEY_ENTER: begin
+                               paused := TRUE;
+                               repeat
+                                   code := GetKey;
+                                   if (code = KEY_ENTER) or (code = KEY_ESC)
+                                   then paused := FALSE;
+                               until not paused;
+                             end;
+                    KEY_ESC: begin
+                                 paused := TRUE;
+                                 repeat
+                                   code := GetKey;
+                                   if code = KEY_ESC
+                                   then paused := FALSE;
+                                 until not paused;
+                               
+                                 DrawTrack(tr);
+                                 DrawCar(myCar);
+                                 DrawCars(cars);
+                                 escape := TRUE;
+                             end;
+                    end;
+                    // iðvalo kas liko KeyPressed!
+                    ClearInputBuffer;
+                end;
+
+                // check collision
+                crash := CheckCollision(myCar, cars);
+
+                DrawCar(myCar);
+
+                ShowStats(name, gone, speed, lifes, score);
+
+                if code = KEY_ESC
+                then done := TRUE;
+                if gone < NUM_OF_OPPONENTS
+                then Delay(SPEEDS[speed])
+                else finish := TRUE;
+                
+            until finish or crash or escape;
+
+            if crash
+            then begin
+                Delay(500);
+                if lifes > 0 then
+                    if ConfirmCrashDialog(lifes)
+                    then lifes := lifes - 1
+                    else done := TRUE
+                else begin
+                    ShowLostInfo(totalScore+score, score);
+                    done := TRUE;
+                end;
+            end;
+            if finish
+            then begin
+                Delay(500);
+                if speed < MAX_SPEED
+                then begin
+                    ShowFinishInfo(totalScore, score, speed * 100, speed);
+                    ShowChampInfo(totalScore, score, speed * 100, speed);
+                    totalScore := totalScore + speed * 100;
+                    speed := speed + 1;
+                end
+                else begin
+                    ShowChampInfo(totalScore, score, speed * 100, speed);
+                    done := TRUE;
+                end;
+            end;
+        until done or escape;  // kol iðjungia ar kol pereina visà
+    end;
+  
+  Procedure SelectOptions(var nickName : string; var carColor, trackMode, speed : byte);
+      var option, numOfOpts, colNum, i, posX, posY : byte;
+          selected : boolean;
+          Modes : array [1..3] of string;
+          keyCode : longint;
+
+      function ReadName(var name : string) : longint;
+          var key : longint;
+              len : word;
+        begin
+            CursorOn;
+            len := Length(name);
+            Write(name);
+            repeat
+                key := GetKey;
+                case key of
+                  KEY_BSPACE: if len > 0
+                              then begin
+                                  Delete(name, len, 1);
+                                  len := len - 1;
+                                  GoToXY(WhereX-1, WhereY);
+                                  ClrEol;
+                              end;
+                  Ord('A')..Ord('Z'): begin
+                                        Write(char(key));
+                                        name := name + char(key);
+                                        len := len + 1;
+                                      end;
+                  Ord('a')..Ord('z'): begin
+                                        Write(char(key));
+                                        name := name + char(key);
+                                        len := len + 1;
+                                      end;
+                  Ord('0')..Ord('9'): begin
+                                        Write(char(key));
+                                        name := name + char(key);
+                                        len := len + 1;
+                                      end;
+                end;
+            until (key = KEY_DOWN) or (key = KEY_UP);
+            ReadName := key;
+            CursorOff;
+        end;
+
+    begin
+        Window(1, 1, 80, 25);
+        TextBackground(BLACK);
+        TextColor(WHITE);
+        ClrScr;
+        
+        Modes[1] := 'Easy';
+        Modes[2] := 'Normal';
+        Modes[3] := 'Hard';
+        numOfOpts := 5;
+        option := 1;
+        selected := FALSE;
+        colNum := carColor;
+        if not trackMode in [1..3] then trackMode := 1;
+        if not speed in [1..MAX_SPEED] then speed := 1;
+        posX := 18;
+        posY := 3;
+
+        repeat
+            // teksto ribos
+            Window(posX, posY, posX+32, posY + 15);
+            TextBackground(MENU_BACK_COLOR);
+            ClrScr;
+            
+            if option = 1 then TextColor(MENU_SELECT)
+            else TextColor(MENU_COLOR);
+            DrawOption('Name:', 12, 1, 1);
+            
+            if option = 2 then TextColor(MENU_SELECT)
+            else TextColor(MENU_COLOR);
+            DrawOption('Car color:', 12, 1, 4);
+            
+            if option = 3 then TextColor(MENU_SELECT)
+            else TextColor(MENU_COLOR);
+            DrawOption('Track:', 12, 1, 7);
+            
+            if option = 4 then TextColor(MENU_SELECT)
+            else TextColor(MENU_COLOR);
+            DrawOption('Speed:', 12, 1, 10);
+            WriteLn;
+            if option = numOfOpts then TextColor(MENU_SELECT)
+            else TextColor(MENU_COLOR);
+            DrawButton('OK', 6, WhereX+15, WhereY);
+
+            TextColor(MENU_COLOR);
+            GoToXY(14, 2);
+            Write(nickName);
+            
+            GoToXY(14, 5);
+            TextBackground(COLORS[colNum]);
+            Write('   ');
+            GoToXY(14, 8);
+            TextBackground(MENU_BACK_COLOR);
+            for i := 1 to 3 do
+                if trackMode = i then
+                begin
+                    TextColor(OPTION_SELECT);
+                    Write(Modes[i], '   ');
+                    TextColor(MENU_COLOR);
+                end
+                else Write(Modes[i], '   ');
+            GoToXY(14, 11);
+            for i := 1 to MAX_SPEED do
+                if speed = i then
+                begin
+                    TextColor(OPTION_SELECT);
+                    Write(i, ' ');
+                    TextColor(MENU_COLOR);
+                end
+                else Write(i, ' ');
+            
+            //  vardo nuskaitymas
+            if option = 1
+            then begin
+                Window(posX+13, posY+1, posX+23, posY+1);
+                TextBackground(YELLOW);
+                ClrScr;
+                keyCode := ReadName(nickName);
+
+                case keyCode of
+                    KEY_UP: option := numOfOpts;
+                    KEY_DOWN: option := option + 1;
+                end;
+            end
+            else begin
+                keyCode := GetKey;
+                case keyCode of
+                    KEY_UP: if option > 1 then option := option - 1
+                            else option := numOfOpts;
+                    KEY_DOWN: if option < numOfOpts then option := option + 1
+                              else option := 1;
+                    KEY_LEFT:  case option of
+                           { 1: Read name }
+                             2: if colNum > 1 then colNum := colNum - 1
+                                else colNum := NUM_OF_COLORS;
+                             3: if trackMode > 1 then trackMode := trackMode - 1
+                                else trackMode := 3;
+                             4: if speed > 1 then speed := speed - 1
+                                else speed := MAX_SPEED;
+                           { 5: - OK exit }
+                           end;
+                    KEY_RIGHT: case option of
+                             2: if colNum < NUM_OF_COLORS then colNum := colNum + 1
+                                else colNum := 1;
+                             3: if trackMode < 3 then trackMode := trackMode + 1
+                                else trackMode := 1;
+                             4: if speed < MAX_SPEED then speed := speed + 1
+                                else speed := 1;
+                           end;
+                    KEY_ENTER: if option = numOfOpts then selected := TRUE;
+                end;
+            end;
+
+        until selected;
+        
+        carColor := COLORS[colNum];
+    end;
+
+
+  Procedure MainMenu(selectedMenu : byte; firstTime : boolean);
+    begin
+        // logotipas pieðiamas tik pirmà kartq
+        if firstTime
+        then begin
+            Window(1, 1, 80, 25);
+            TextBackground(MENU_BACK_COLOR);
+            ClrScr;
+            Window(20, 3, 60, 14);
+            DrawLogo();
+        end;
+
+        Window(30, 15, 60, 25);
+        { ClrScr; }
+        if selectedMenu = 1 then TextColor(MENU_SELECT)
+        else TextColor(MENU_COLOR);
+        DrawButton('Play Game', 13, 1, 1);
+        if selectedMenu = 2 then TextColor(MENU_SELECT)
+        else TextColor(MENU_COLOR);
+        DrawButton('Options', 13, 1, 4);
+        if selectedMenu = 3 then TextColor(MENU_SELECT)
+        else TextColor(MENU_COLOR);
+        DrawButton('Exit', 13, 1, 7);
+    end;
+  
+  
+{------------------------------------------------------------------------------}
+
+     var exitGame, selected : boolean;
+         sMenu, numOfMenus : byte;
+         name : string;
+         color, trackMode, speed : byte;
+         keyCode : longint;
+
+begin
+
+    CursorOff;
+    numOfMenus := 3;
+    sMenu := 1;
+    exitGame := FALSE;
+    name := 'anonym';
+    color := RED;
+    trackMode := 1;
+    speed := 1;
+    
+    repeat
+        MainMenu(sMenu, TRUE);
+            
+        selected := FALSE;
+        repeat
+            MainMenu(sMenu, FALSE);
+            
+            keyCode := GetKey;
+            case keyCode of
+                KEY_UP: if sMenu > 1 then sMenu := sMenu - 1
+                    else sMenu := numOfMenus;
+                KEY_DOWN: if sMenu < numOfMenus then sMenu := sMenu + 1
+                       else sMenu := 1;
+                KEY_ENTER: selected := TRUE;
+            end;
+        until selected;
+        
+        case sMenu of
+          1: PlayGame(name, color, trackMode, speed);
+          2: SelectOptions(name, color, trackMode, speed);
+          3: exitGame := TRUE;
+        end;
+    
+    until exitGame;
+
+end.
+
+
+{
+    PauseDialog() : boolean; F - RESUME, T - Exit
+    
+}

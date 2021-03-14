@@ -1,0 +1,203 @@
+program formule_ir_rancar;
+   uses Crt;
+    var xf, yf,
+        xrc,yrc,vieta,sk: byte;
+        sim: char;
+        avarija: boolean;
+
+  Procedure design;
+      begin
+        Window(1,1,80,25);            { paruosia ekrana }
+        TextBackground(0); ClrScr;
+        GoToXY(32,5); TextColor(red);
+        Write('FORMULA ONE 2oo5');
+        GoToXY(31,15); TextColor(brown);
+        Write(#168,' by EWARuDO 2005 ');
+        GoToXY(65,23);
+        TextColor(red+blink);
+        WriteLn('[+ENTER+]');
+        ReadLn;
+        TextBackground(green);
+        ClrScr;
+        Window(32,1,49,25);
+        TextBackground(brown);
+        ClrScr;
+        Window(33,1,48,25);
+        TextBackground(black);
+        ClrScr;
+        Window(55,2,75,24);
+        TextBackground(3);
+        ClrScr;
+        Randomize;
+      end;  {design}
+  Procedure rasyti (nr: integer);
+      begin
+        Window(55,3,75,5);
+        TextBackground(3);
+        TextColor(0);
+        ClrScr;
+        Write(' Pralenkta: ',nr);
+      end;
+
+  Procedure formule (x1,y1,sp: byte);
+      begin
+        Window(x1,y1,x1+6,y1+4);          { kebulas }
+        Textbackground(sp);
+        ClrScr;
+      end;  { formule }
+
+  Procedure player (var xf,yf: byte; sim: char);
+    begin
+      Formule(xf,yf,red);
+      sim := ReadKey;
+      Case sim of
+        #0: begin
+              sim := ReadKey;
+              Case sim of
+                #72: if yf > 1    then begin                                 { Up GotoXY(WhereX,WhereY-1);}
+                                         formule (xf,yf,black);
+                                         yf := yf - 1;
+                                         formule (xf,yf,red);
+                                       end;
+                #75: if xf = 41   then begin
+                                         formule (xf,yf,black);    { Left, GotoXY(WhereX-1,WhereY);}
+                                         xf := xf - 7;
+                                         formule (xf,yf,red);
+                                       end;
+                #77: if xf = 34   then begin                    { Right GotoXY(WhereX+1,WhereY);}
+                                         formule (xf,yf,black);
+                                         xf := xf + 7;
+                                         formule (xf,yf,red);
+                                       end;
+                #80: if yf+4 < 25 then begin                 { Down GotoXY(WhereX,WhereY+1);}
+                                         formule (xf,yf,black);
+                                         yf := yf + 1;
+                                         formule (xf,yf,red);
+                                       end;
+              end; {Case sim of}
+            end;   {begin}
+      end;         {case sim of}
+    end;           { player }
+
+  Procedure rancar1 (x1,y1, sp: byte);
+      begin
+        if y1 < 5 then begin                    { masina ivaziuoja i ekrana}
+                        Window (x1,1,x1+6,y1);
+                        TextBackGround(sp);
+                        ClrScr;
+                       end;
+        if (y1 >= 5) and (y1 <= 25)              { vaziuoja per ekrana }
+           then begin
+                 Window (x1,y1-4,x1+6,y1);
+                 TextBackGround(sp);
+                 ClrScr;
+                end;
+        if y1 > 25                               { ir is jo isvaziuoja }
+           then begin
+                Window (x1,y1-4,x1+6,25);
+                TextBackGround(sp);
+                ClrScr;
+                end;
+      end;
+
+  Procedure crash (xf,yf,xrc,yrc,sp1,sp2: byte);
+        var x1,y1,x2,y2,i: byte;
+      begin
+        x1 := xf;  y1 := yf;
+        x2 := xrc; y2 := yrc;
+        Window (x2,y2-3,x2+6,y2);
+        TextBackground(sp2); ClrScr;
+        Window (x1,y1+1,x1+6,y1+2);
+        TextBackground(sp1); ClrScr;
+        Window (56,10,75,20);
+        TextBackGround(3); ClrScr;
+        for i := 4 to 10 do
+            begin
+              TextColor(i+blink);
+              WriteLn (' A V A R I J A !!!');
+            end;
+        Window (67,23,80,25);
+        TextColor (Red+blink);
+        WriteLn ('[+ENTER+]');
+        ReadLn;
+      end;
+
+  Procedure finish;
+      begin
+        Window(3,2,78,24);
+        TextBackground(0);
+        TextColor(red);
+        ClrScr;
+        GoToXY(21, 7);
+        Write('Sveikinu sekmingai pravaziavus trasa!!!');
+        GoToXY(67,23);
+        TextColor(red+blink);
+        WriteLn('[+ENTER+]');
+        ReadLn
+      end;
+
+  Procedure pabaiga;
+      const t = 200;
+        var a, x1, y1, x2, y2, i: integer;
+      begin
+        ClrScr;
+        a := 0;   i := 300;
+        x1 := 1;  y1 := 1;
+        x2 := 80; y2 := 25;
+        Window (x1,y1,x2,y2);
+        TextBackground (a);
+        ClrScr;
+        While (x1 < 30) and (y1 < 13) do
+          begin
+            i := i - 20;
+            Sound(i);
+            a := a + 1;
+            x1 := x1 + 2; y1 := y1 + 1;
+            x2 := x2 - 2; y2 := y2 - 1;
+            Window (x1,y1,x2,y2);
+            TextBackground (a);
+            Delay(t);
+            ClrScr;
+            NoSound
+          end;
+        TextColor(0+blink);
+        Write('           Pabaiga! ');
+        ReadLn
+      end;
+
+begin
+  design;
+  xf := 34;                     { pradines reiksmes }
+  yf := 21;
+  sk := 0;
+  formule (xf,yf,red);
+  repeat
+    Rancar1(xrc,yrc-1, black);
+    rasyti(sk);
+    vieta := Random (10);
+    if vieta <= 5 then xrc := 34
+                  else xrc := 41;
+    yrc := 1;
+    Rancar1(xrc,yrc, green);
+    Delay(100);
+    yrc := yrc + 1;
+    repeat
+      formule(xf,yf,red);
+      Rancar1(xrc,yrc-1, black);
+      Rancar1(xrc,yrc, green);
+      Delay(100);
+      yrc := yrc + 1;
+      if KeyPressed
+        then player(xf,yf,sim);
+      avarija := (yf = yrc) or (yf+1=yrc) or
+                 (yf+2=yrc) or (yf+3=yrc) or
+                 (yf+4=yrc);
+    until (avarija and(xf=xrc)) or (yrc>29);
+    sk := sk + 1;
+  until (avarija and(xf=xrc)) or (sk = 10);
+
+  If avarija and ( xf=xrc )
+     then crash (xf,yf,xrc,yrc,red,green);
+  If sk = 10 then finish;
+  pabaiga;
+end.

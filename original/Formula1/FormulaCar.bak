@@ -1,0 +1,50 @@
+Unit FormulaCar;
+
+interface
+  Uses CRT;
+
+  Type CarType = record
+           posX, posY: byte;
+           length, width : byte;
+           color : byte;
+           clearColor : byte;
+       end;
+
+  Function NewCar(posX, posY, length, width, color, cColor : byte) : CarType;
+  
+  Procedure DrawCar(car : CarType);
+  
+  Procedure MoveCar(var car : CarType; dX, dY : byte);
+  
+
+implementation
+
+  Function NewCar(posX, posY, length, width, color, cColor : byte) : CarType;
+      var nCar : CarType;
+    begin
+        nCar.posX := posX;
+        nCar.posY := posY;
+        nCar.length := length-1;
+        nCar.width := width-1; // nes pieðia (posX,posY, posX+width-1, posY+height-1);
+        nCar.color := color;
+        nCar.clearColor := cColor;
+        NewCar := nCar;
+    end;
+
+  Procedure DrawCar(car : CarType);
+    begin
+        Window(car.posX, car.posY, car.posX+car.width, car.posY+car.length);
+        TextBackground(car.color);
+        ClrScr;
+    end;
+
+  Procedure MoveCar(var car : CarType; dX, dY : byte);
+    begin
+        car.posX := car.posX + dX;
+        car.posY := car.posY + dY;
+    end;
+
+begin
+
+end.
+
