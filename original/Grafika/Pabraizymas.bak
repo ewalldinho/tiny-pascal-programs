@@ -1,0 +1,93 @@
+program Pabraizymas;
+  Uses Graph;
+  
+  const kelias = 'D:\TP\UNITS';
+        N = 30;
+  var gd, gm : integer;
+      plotis, aukstis : integer;
+      x0, y0, x, y : word;
+      i, j : word;
+      tipas, kodas, storis : word;
+
+ procedure skaiciuoti (var x, y : word);
+     var width, height : word;
+   begin
+      width := GetMaxX();
+      height := GetMaxY();
+
+      if ( x in [1..width-1] ) and (y = 1)
+        then begin
+          x := x+1;
+        end;
+      if ( x = width ) and (y in [1..height-1])
+        then begin
+          y := y+1;
+        end;
+      if ( x in [2..width] ) and (y = height)
+        then begin
+          x := x-1;
+        end;
+      if ( x = 1 ) and (y in [2..height])
+        then begin
+          y := y-1;
+        end;
+   end;
+
+      
+Begin
+  gd := Detect;
+  InitGraph(gd, gm, kelias);
+  plotis := GetMaxX();
+  aukstis := GetMaxY();
+  ClearDevice();  // isvalo ekrana
+  SetBkColor(YELLOW);
+  SetColor(GREEN);
+  tipas := 4;  // vartotojo nurodyta,  isstisine 0, punktyras 1, asine 2, taskine 3
+  kodas := $AAAA;  //  spalvos kodas = 10101010 10101010  - 16 bitu
+  storis := 3;   //  triju tasku
+  SetLineStyle(tipas, kodas, storis);
+  Line(10,10, 800,600);
+  Line(10, 600, 800, 10);
+  Line(450, 10, 360, 600);
+  MoveTo(800, 100);    // zymeklis perkeliamas i tas koordinates
+  LineTo(700, 200);
+
+  ClearDevice;
+
+  Randomize;
+
+  for i := 1 to 1000 do
+    begin
+        x := Random(plotis)+1;
+        y := Random(aukstis)+1;
+        PutPixel(x, y, (x+y) mod 100);
+    end;
+
+
+   x0 := plotis div 2;
+   y0 := aukstis div 2;
+
+  i := 1;
+  x := 1; y := 1;
+  while i < 65000 do
+    begin
+      skaiciuoti(x, y);
+      Line(x0, y0, x, y);
+      i := i + 1;
+{      if j < i - 30 then begin
+         SetColor(YELLOW);
+         Line(x0, y0, j, 1);
+         j := j+1;
+         SetColor(GREEN);
+      end;               }
+    end;
+
+    
+WriteLn('[enter]');
+ReadLn;
+
+
+
+  CloseGraph();
+
+End.
