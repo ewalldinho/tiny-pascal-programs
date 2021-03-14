@@ -1,0 +1,5 @@
+program Bevardë0;
+begin
+  WriteLn('Labas');
+  Readln;
+end.
