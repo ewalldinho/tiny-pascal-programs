@@ -6,19 +6,24 @@
 	
 }
 
-Program SuDoKu_sprendejas;
+Unit testSDKSolve;
+
+interface
+  procedure RunTests;
+
+implementation
+
    Uses CRT, SuDoKu_API;
 
+procedure RunTests;
 
-   Var sdkString : array[1..20] of string;
+   var sdkString : array[1..20] of string;
        SDK : SuDoKu;
        k, sk, selectSDK : byte;
        x, y : byte;
        ivestas, viskas : boolean;
-       
-Begin
 
-    
+begin
     InitSuDoKu(SDK);
     sdkString[1] := '12345678.45678912.78912345.2345678.15678912.48912345.7345678.12678912.45912345.78';
     sdkString[2] := '..1..6.3.......9.58..7...4.983.2...7..48.5.....7.6.1...3.1....94.56......6.9845..';
@@ -56,6 +61,8 @@ Begin
     then WriteLn('Geras Sudoku!')
     else WriteLn('Negeras nx...');
 
+    WriteLn;
+    WriteLn('Kiek liko matrica:');
     for y := 1 to 9 do
     begin
         for x := 1 to 9 do
@@ -86,6 +93,8 @@ Begin
     then WriteLn('Geras Sudoku!')
     else WriteLn('Negeras nx...');
 
+    WriteLn;
+    WriteLn('Kiek liko matrica:');
     for y := 1 to 9 do
     begin
         for x := 1 to 9 do
@@ -100,4 +109,8 @@ Begin
 
     Write('[enter]');
     ReadLn;
+end;
+
+Begin
 End.
+
