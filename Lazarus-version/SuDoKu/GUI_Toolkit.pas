@@ -406,22 +406,22 @@ IMPLEMENTATION
         spaces := spaces div 2;
 
         GoToXY(startX, startY);
-        //Write(#201); for i := 1 to width do Write(#205); Write(#187);
-        Write('╔'); for i := 1 to width do Write('═'); Write('╗');
+        Write(#201); for i := 1 to width do Write(#205); Write(#187);
+        //Write('╔'); for i := 1 to width do Write('═'); Write('╗');
 
         GoToXY(startX, startY+1);
-        Write('║'); // (#186);
+        Write(#186); // ('║');
         for i := 1 to spaces do
             Write(' ');
         Write(btnTitle);
         for i := 1 to spaces do
             Write(' ');
         if xSpace then Write(' ');
-        Write('║'); //(#186);
+        Write(#186); // ('║');
 
         GoToXY(startX, startY+2);
-        //Write(#200); for i := 1 to width do Write(#205); Write(#188);
-        Write('╚'); for i := 1 to width do Write('═'); Write('╝');
+        Write(#200); for i := 1 to width do Write(#205); Write(#188);
+        //Write('╚'); for i := 1 to width do Write('═'); Write('╝');
     end;
 
   // nuskaito paspaustą klavišą ir grąžina vieną iš konstantų arba simbolio kodą

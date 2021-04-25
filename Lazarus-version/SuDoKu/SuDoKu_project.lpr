@@ -7,7 +7,7 @@
 
 program SuDoKu_project;
 
-   Uses SuDoKu_API, GUI_Toolkit, SuDoKu_Global;
+   Uses SuDoKu_API, GUI_Toolkit, SuDoKu_Global, CRT;
 
   //const EXTS : array[1..2] of string = ('sdk', 'txt');
         //EXTC = 2;
@@ -15,13 +15,18 @@ program SuDoKu_project;
    Var SDK : SuDoKu;
        menuItem : integer;
        i, j : integer;
-       ivestas,  // ar SuDoKU buvo ivestas
+       ivestas,  // ar SuDoKu buvo ivestas
        // kai buna ivestas ir spaudziama Create -> Cancel inputed FALSE
-       // bet SuDoKU buna jau ivestas prieš tai (ivestas = TRUE)
+       // bet SuDoKu buna jau ivestas prieš tai (ivestas = TRUE)
        inputed,
        viskas : boolean;
 
 begin
+    { disable changing of characters CodePage, needed for box symbols to draw UI }
+    SetUseACP(FALSE);
+    //SetUseACP(FALSE);
+    //SetSafeCPSwitching(TRUE);
+
     SetLanguage(LANG_LT);
     ChangeCursor(OFF);
     inputed := FALSE;
