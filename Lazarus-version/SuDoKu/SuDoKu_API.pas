@@ -2,29 +2,14 @@
 {
 	Modulis: SuDoKu_API
 	Funkcionalumas: Įgyvendina esmines sudoku žaidimo funkcijas: meniu rodymas, sprendimas, failo pasirinkimas ir pan.
-	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com) 
-
-    Table drawing symbols:
-        #201 ╔    #203 ╦    #187 ╗
-        #204 ╠    #206 ╬    #185 ╣
-        #200 ╚    #202 ╩    #188 ╝
-        #186 ║
-        #205 ═
-
-        #218 ┌    #194 ┬    #191 ┐
-        #195 ├    #197 ┼    #180 ┤
-        #192 └    #193 ┴    #217 ┘
-        #179 │
-        #196 ─
-
-        #176 ░    #177 ▒    #178 ▓
+	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com)
 }
 
 Unit SuDoKu_API;
 
 interface
 
-    Uses UnicodeCRT, GUI_Toolkit;
+    Uses UnicodeCRT, LazUTF8, GUI_Toolkit, SuDoKU_Global;
 
     Type // number = [1..9];
         SuDoKu_Row = array[1..9] of byte;
@@ -54,7 +39,7 @@ interface
   Procedure SaveSuDoKu(SDK : SuDoKu; dir : string);
   
   Procedure InputFromFile (dir : string; var SDK : SuDoKu; var sdkIn : boolean);
-  Procedure InputFromKeyboard (var SDK : SuDoKu; var sdkIn : boolean);
+  Procedure InputFromKeyboard (var SDK : SuDoKu; var confirmed : boolean);
 
 
 (*************  SuDoKu  sprendimas  *******************************************)
@@ -77,12 +62,37 @@ interface
 
 implementation
 
+  procedure CenterText(x, y: word; text : string);
+    var posX, i : integer;
+  begin
+      posX := x - UTF8Length(text) div 2;
+      GoToXY(1, y);
+      for i := 1 to 40 do
+        Write('  ');
+      GoToXY(posX, y);
+      Write(text);
+  end;
+
+  procedure SetColors(backgroundColor, foregroundColor : Byte; isSelected : Boolean);
+  begin
+    if isSelected then
+    begin
+        TextBackground(foregroundColor);
+        TextColor(backgroundColor);
+    end
+    else begin
+        TextBackground(backgroundColor);
+        TextColor(foregroundColor);
+    end
+  end;
 
   Procedure ShowSuDoKuScreen();
         var i : integer;
+            enterGame : boolean;
+            k : word;
     begin
-        TextBackground(YELLOW);
-        TextColor(RED + BLINK);
+        TextBackground(Yellow);
+        TextColor(Red + Blink);
         ClrScr;
         GoToXY(1, 3);
         //WriteLn('       ', #219,#219,#219,#219,#219, '                  ',                                  #220,#220,#220,#220,#220,#220,#220,#220, '                 ',#220,#220,#220,#220,#220, '   ', #220,#220,#220, '        ');
@@ -115,9 +125,30 @@ implementation
         GoToXY(3, WhereY);
         for i := 1 to 38 do Write('█'); // (#219);
         for i := 1 to 38 do Write('▀'); // (#223);
-        GoToXY(35, 20);
-        WriteLn('press [enter]');
-        ReadLn;
+
+        enterGame := FALSE;
+        repeat
+            //enterText := GetWord(TXT_PRESS_ENTER);
+            CenterText(40, 20, GetWord(TXT_PRESS_ENTER));
+            //GoToXY(35, 20);
+            //PrintWord(TXT_PRESS_ENTER);
+
+            GoToXY(37, 22);
+            SetColors(Yellow, Red, CurrentLanguage=LANG_LT);
+            Write(' LT ');
+            GoToXY(41, 22);
+            SetColors(Yellow, Red, CurrentLanguage=LANG_EN);
+            Write(' EN ');
+
+            k := GetKey;
+            case (k) of
+                KEY_LEFT: ToggleLanguage();
+                KEY_RIGHT: ToggleLanguage();
+                KEY_ENTER: enterGame := TRUE;
+            end;
+            //ReadLn;
+            SetColors(Yellow, Red+Blink, FALSE);
+        until enterGame;
     end;
 
 
@@ -130,8 +161,8 @@ implementation
         procedure SetButtonColor(isSelected : boolean);
         begin
             if isSelected
-              then TextColor(RED)
-              else TextColor(BLUE);
+              then TextColor(Green)
+              else TextColor(Blue);
         end;
 
         // procedura pažymėti menu punktui
@@ -140,25 +171,31 @@ implementation
 
             GoToXY(5, 3);
             TextColor(BLACK);
-            WriteLn('- SuDoKu menu -');
+            PrintWord(TXT_MENU_TITLE);
 
+            { Create Sudoku }
             SetButtonColor(select = 1);
-            DrawButton('Create SuDoKu', 15, 5, 5);
+            DrawButton(GetWord(TXT_MENU_CREATE), 15, 5, 5);
 
+            { Load sudoku }
             SetButtonColor(select = 2);
-            DrawButton('Load SuDoKu', 15, 5, 8);
+            DrawButton(GetWord(TXT_MENU_LOAD), 15, 5, 8);
 
+            { Edit sudoku }
             SetButtonColor(select = 3);
-            DrawButton('Edit SuDoKu', 15, 5, 11);
+            DrawButton(GetWord(TXT_MENU_EDIT), 15, 5, 11);
 
+            { Solve sudoku }
             SetButtonColor(select = 4);
-            DrawButton('Solve SuDoKu', 15, 5, 14);
+            DrawButton(GetWord(TXT_MENU_SOLVE), 15, 5, 14);
 
+            { Save sudoku }
             SetButtonColor(select = 5);
-            DrawButton('Save SuDoKu', 15, 5, 17);
+            DrawButton(GetWord(TXT_MENU_SAVE), 15, 5, 17);
 
+            { Exit sudoku }
             SetButtonColor(select = 0);
-            DrawButton('Exit SuDoKu', 15, 5, 20);
+            DrawButton(GetWord(TXT_MENU_EXIT), 15, 5, 20);
 
             TextColor(BLACK);
         end;
@@ -190,6 +227,11 @@ implementation
                             m := -1;
                             done := TRUE;
                          end;
+                KEY_L: begin
+                          if CurrentLanguage = LANG_LT
+                            then CurrentLanguage := LANG_EN
+                            else CurrentLanguage := LANG_LT;
+                       end;
             end;
 
         until done;
@@ -293,11 +335,11 @@ implementation
     end;
 
   Procedure EditSuDoKu(var SDK : SuDoKu);
-      var sudokuIn : boolean; // TRUE - nes jau editina
+      var confirmed : boolean; // TRUE - nes jau editina
     begin
         DrawSuDoKuTable;
         ShowSuDoKu(SDK);
-        InputFromKeyboard(SDK, sudokuIn);
+        InputFromKeyboard(SDK, confirmed);
     end;
 
   Procedure SaveSuDoKu(SDK : SuDoKu; dir : string);
@@ -312,7 +354,7 @@ implementation
         pavIlgis := 0;
         enter := FALSE;
         escape := FALSE;
-        Write('Issaugoti kaip: ');
+        Write(GetWord(TXT_SAVE_AS), ' ');
         repeat
             key := GetKey;
             case key of
@@ -364,13 +406,13 @@ implementation
                     WriteLn(F);
                 end;
                 Close(F);
-                WriteLn('SuDoKu issaugotas faile: "', failoPav, '".');
+                WriteLn(GetWord(TXT_SAVED_IN_FILE), ' "', failoPav, '".');
             end
-            else WriteLn('Klaida! SuDoKu issaugoti nepavyko.');
+            else PrintWord(TXT_SAVING_FAILED);
         end
-        else WriteLn('Veiksmas atsauktas...');
+        else PrintWord(TXT_ACTION_CANCELED);
 
-        WriteLn('[enter]');
+        PrintWord(TXT_PRESS_ENTER);
         ReadLn;
         CursorOff;
     end;
@@ -390,9 +432,9 @@ implementation
 
         if failoPav = ''  { failas nepasirinktas - ESC }
         then begin
-            GoToXY(2, WhereY + 1);
+            GoToXY(3, WhereY + 1);
             TextColor(BLACK);
-            WriteLn('Operation canceled...');
+            PrintWord(TXT_ACTION_CANCELED);
             sdkIn := FALSE;
         end
         else begin     { failas pasirinktas - bandoma nuskaityti }
@@ -406,7 +448,7 @@ implementation
             then begin
                 GoToXY(2, WhereY + 1);
                 TextColor(BLACK);
-                WriteLn('Nepavyko atverti SuDoKu failo "', failoPav, '".');
+                WriteLn(GetWord(TXT_LOAD_SUDOKU_FAILED), ' "', failoPav, '".');
                 sdkIn := FALSE;
             end
             else begin
@@ -420,17 +462,18 @@ implementation
                     end;
                 end;
                 Close(fSDK);
-                GoToXY(2, WhereY + 1);
+                GoToXY(3, WhereY + 1);
                 TextColor(BLACK);
-                Write(' SuDoku sekmingai nuskaitytas.');
+                PrintWord(TXT_LOAD_SUDOKU_SUCCESS);
                 sdkIn := TRUE;
             end;
         end;
-        WriteLn('  [enter]');
+        GoToXY(3, WhereY);
+        PrintWord(TXT_PRESS_ENTER);
         ReadLn;
     end;
 
-  Procedure InputFromKeyboard (var SDK : SuDoKu; var sdkIn : boolean);
+  Procedure InputFromKeyboard (var SDK : SuDoKu; var confirmed : boolean);
         var X, Y : byte;
             key : smallint;
             done : boolean;
@@ -438,7 +481,7 @@ implementation
         X := 1;
         Y := 1;
         done := FALSE;
-        sdkIn := FALSE;
+        confirmed := FALSE;
 
         // kursorius tampa stačiakampis (kaip insert)
         CursorBig;
@@ -465,11 +508,11 @@ implementation
                            end;
                 KEY_ENTER: begin
                              done := TRUE;
-                             sdkIn := TRUE;
+                             confirmed := TRUE;
                            end;
                 KEY_ESC: begin
                             done := TRUE;
-                            sdkIn := FALSE;
+                            confirmed := FALSE;
                          end;
                 32, 48: begin
                             Write(' ');
@@ -621,8 +664,7 @@ implementation
     end;
     
   Function Minimal(index : byte; var min : byte) : boolean;
-      var i : byte;
-          found : boolean;
+      var found : boolean;
     begin
         found := FALSE;
         while (min < 9) and (not found) do

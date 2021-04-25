@@ -3,23 +3,38 @@
 	Modulis: GUI_Toolkit
 	Funkcionalumas: failų nuskaitymas, parodymas; dialogai; atskiru GUI zonu reguliavimas.
 	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com) 
-	
+
+    Table drawing symbols:
+        #201 ╔    #203 ╦    #187 ╗
+        #204 ╠    #206 ╬    #185 ╣
+        #200 ╚    #202 ╩    #188 ╝
+        #186 ║
+        #205 ═
+
+        #218 ┌    #194 ┬    #191 ┐
+        #195 ├    #197 ┼    #180 ┤
+        #192 └    #193 ┴    #217 ┘
+        #179 │
+        #196 ─
+
+        #176 ░    #177 ▒    #178 ▓
 }
 
 Unit GUI_Toolkit;
 
 INTERFACE
 
-   Uses UnicodeCRT, DOS;
+   Uses UnicodeCRT, LazUTF8, DOS, SuDoKU_Global;
 
-   Const KEY_UP = 72;
-         KEY_DOWN = 75;
-         KEY_LEFT = 77;
-         KEY_RIGHT = 80;
+   Const KEY_UP = 1072;
+         KEY_DOWN = 1080;
+         KEY_LEFT = 1075;
+         KEY_RIGHT = 1077;
          KEY_BACKSPACE = 8;
          KEY_TAB = 9;
          KEY_ENTER = 13;
          KEY_ESC = 27;
+         KEY_L = 108;
 
          EXTS_MAX = 10; // didžiausias extensionu kiekis
          FPP = 15;  // FILES_PER_PAGE
@@ -98,7 +113,7 @@ INTERFACE
    *   (+) maxSize  - maksimalus rodomo failo dydis baitais
    *   (+) maxFiles - kiek maxFailų parenka iš tinkamų
    *)
-  Procedure SelectFile(dir : string; var failas : string; exts : ExtsType; maxSize : word);
+  Procedure SelectFile(dir : string; var failas : string; extensions : ExtsType; maxSize : word);
   
   // išjungia, įjungia, padidina kursorių
   Procedure ChangeCursor(mode : char);
@@ -146,7 +161,7 @@ IMPLEMENTATION
       procedure YesNoButton(selected : boolean; title : string; x, y : byte);
           var bWidth, i : byte;
         begin
-            bWidth := Length(title) +2;
+            bWidth := UTF8Length(title) +2;
             // išvalomas senas
             TextBackground(GREEN);
             GoToXY(x, y);
@@ -203,7 +218,7 @@ IMPLEMENTATION
             Write('═'); // #205
         Write('╝'); // #188
         GoToXY(1, height+1);
-        Write(' Use: ←→ or TAB'); // #27#26
+        Write(GetWord(TXT_USE_ARROW_KEYS_OR_TAB));
         
         repeat
             YesNoButton(select=1, yesTitle, 4, 4);
@@ -272,7 +287,7 @@ IMPLEMENTATION
     end;
     
   // suteikia GUI pasirenkant SuDoKu failą
-  Procedure SelectFile(dir : string; var failas : string; exts : ExtsType; maxSize : word);
+  Procedure SelectFile(dir : string; var failas : string; extensions : ExtsType; maxSize : word);
       var rec : SearchRec;
           i, nr, inPage, numOfFiles, numOfExts,
           p, page, pages : word;
@@ -284,8 +299,8 @@ IMPLEMENTATION
         else dir := Concat(dir, '/'); }
         nr := 0;   // pasirinktas failas
         done := FALSE;
-        numOfExts := CountExts(exts);  // randamas exts skaičius
-        pages := CountPages(dir, exts, numOfExts, maxSize);  // kiek iš viso puslapių
+        numOfExts := CountExts(extensions);  // randamas extensions skaičius
+        pages := CountPages(dir, extensions, numOfExts, maxSize);  // kiek iš viso puslapių
         
         if pages > 0
         then begin
@@ -301,7 +316,7 @@ IMPLEMENTATION
                 for i := 1 to numOfExts do
                 begin
                     // ieškoma *.exts[i] failų
-                    FindFirst(Concat(dir, '/*.', exts[i]), ARCHIVE, rec);
+                    FindFirst(Concat(dir, '/*.', extensions[i]), ARCHIVE, rec);
                     while (DosError=0) and telpaFailai do
                     begin
                         if (rec.Size <= maxSize) // pvz apribojama iki 512B
@@ -394,7 +409,7 @@ IMPLEMENTATION
       var i, ilgis, spaces : integer;
           xSpace : boolean;
     begin
-        ilgis := length(btnTitle);
+        ilgis := UTF8Length(btnTitle);
         if (ilgis > width) then
         begin
             btnTitle := copy(btnTitle, 1, width);

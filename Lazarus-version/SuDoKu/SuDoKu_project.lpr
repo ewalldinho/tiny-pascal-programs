@@ -5,28 +5,27 @@
 	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com)
 }
 
-program SuDoKu_project;
+Program SuDoKu_project;
 
    Uses UnicodeCRT,
         SuDoKu_API, GUI_Toolkit, SuDoKu_Global;
 
    Var SDK : SuDoKu;
        menuItem : integer;
-       i, j : integer;
        ivestas,  // ar SuDoKu buvo ivestas
        // kai buna ivestas ir spaudziama Create -> Cancel inputed FALSE
        // bet SuDoKu buna jau ivestas prieš tai (ivestas = TRUE)
-       inputed,
-       viskas : boolean;
+       confirmed,
+       exitGame : boolean;
 
-begin
+Begin
     { disable changing of characters CodePage, needed for box symbols to draw UI }
     //SetUseACP(FALSE);
 
     SetLanguage(LANG_LT);
     ChangeCursor(OFF);
-    inputed := FALSE;
-    viskas := FALSE;
+    confirmed := FALSE;
+    exitGame := FALSE;
 
     InitSuDoKu(SDK);
 
@@ -36,36 +35,36 @@ begin
     menuItem := 1;
 
     repeat
-        if inputed then ivestas := TRUE;
+        if confirmed then ivestas := TRUE;
         FullScreen;
 
         Langas(30, 3, 75, 23, 7, 1);
         if IsValidSuDoKu(SDK)
         then ShowSuDoKu(SDK)
-        else WriteLn('Invalid SuDoKu!');
+        else WriteLn(GetWord(TXT_INVALID_SUDOKU));
 
         Langas(1, 1, 29, 25, 7, 1);
         Menu(menuItem);
         case menuItem of
 			{ Exit sudoku }
-            0: viskas := TRUE;
+            0: exitGame := TRUE;
 			{ Create sudoku }
             1: begin
                    Langas(30, 3, 70, 23, 7, 1);
                    if ivestas then
                    begin
-                       WriteLn('Esamas SuDoKu bus užmirštas.');
-                       WriteLn('Ar norite testi?');
-                       if ConfirmDialog(35, 9, 24, 'Taip', 'ne')
+                       PrintWord(TXT_CURRENT_SUDOKU_WILL_BE_LOST);
+                       PrintWord(TXT_CONFIRM_CONTINUE);
+                       if ConfirmDialog(35, 9, 24, GetWord(TXT_ANSWER_YES), GetWord(TXT_ANSWER_NO))
                        then begin
                            Langas(30, 3, 70, 23, 7, 1);
                            InitSuDoKu(SDK);
-                           CreateSuDoKu(SDK, inputed);
+                           CreateSuDoKu(SDK, confirmed);
                        end;
                    end
                    else begin
                        InitSuDoKu(SDK);
-                       CreateSuDoKu(SDK, inputed);
+                       CreateSuDoKu(SDK, confirmed);
                    end;
                end;
 			{ Load sudoku }
@@ -73,18 +72,18 @@ begin
                    Langas(30, 3, 75, 23, 6, 1);
                    if ivestas then
                    begin
-                       WriteLn('Esamas SuDoKu bus užmirštas.');
-                       WriteLn('Ar norite testi?');
-                       if ConfirmDialog(35, 9, 24, 'Taip', 'Ne')
+                       PrintWord(TXT_CURRENT_SUDOKU_WILL_BE_LOST);
+                       PrintWord(TXT_CONFIRM_CONTINUE);
+                       if ConfirmDialog(35, 9, 24, GetWord(TXT_ANSWER_YES), GetWord(TXT_ANSWER_NO))
                        then begin
                            Langas(30, 3, 75, 23, 6, 1);
-                           InputFromFile('sdk', SDK, inputed);
+                           InputFromFile('sdk', SDK, confirmed);
                            if not IsValidSuDoKu(SDK)
                            then ivestas := FALSE;
                        end;
                    end
                    else begin
-                       InputFromFile('sdk', SDK, inputed);
+                       InputFromFile('sdk', SDK, confirmed);
                        if not IsValidSuDoKu(SDK)
                        then ivestas := FALSE;
                    end;
@@ -95,7 +94,8 @@ begin
                   if ivestas
                   then EditSuDoKu(SDK)
                   else begin
-                    WriteLn('Pirma ivesk SuDoKu.');
+                    PrintWord(TXT_NO_ACTIVE_SUDOKU);
+                    PrintWord(TXT_PRESS_ENTER);
                     ReadLn;
                   end;
                end;
@@ -108,25 +108,26 @@ begin
                       Solve(SDK);
                       if not Solved(SDK)
                       then begin
-                          WriteLn('Nepavyko išpręsti loginiu mąstymu.');
-                          WriteLn('Ar norite bandyti spėjimo būdu?');
-                          WriteLn('Time for BruteForce?');
-                          if ConfirmDialog(35, 9, 24, 'Taip', 'Ne')
+                          PrintWord(TXT_FAILED_TO_SOLVE_RATIONALLY);
+                          PrintWord(TXT_ASK_SOLVE_BRUTEFORCE_LINE_1);
+                          PrintWord(TXT_ASK_SOLVE_BRUTEFORCE_LINE_2);
+                          if ConfirmDialog(35, 9, 24, GetWord(TXT_ANSWER_YES), GetWord(TXT_ANSWER_NO))
                           then begin
                             Langas(30, 3, 75, 23, 7, 1);
-                            WriteLn('BruteForce sprendimas pradetas');
-                            WriteLn('Palaukite...');
+                            PrintWord(TXT_BRUTE_FORCE_STARTED);
+                            PrintWord(TXT_WAIT_MESSAGE);
 
                             if BruteForce(SDK, 1)
-                            then WriteLn('Ispresta BruteForce metodu.')
-                            else WriteLn('Nepavyko ispresti BruteForce metodu.');
-                            WriteLn('spausk [enter]');
+                            then PrintWord(TXT_BRUTE_FORCE_SUCCESS)
+                            else PrintWord(TXT_BRUTE_FORCE_FAILED);
+                            PrintWord(TXT_PRESS_ENTER);
                             ReadLn;
                           end;
                       end;
                   end
                   else begin
-                      WriteLn('Pirma ivesk SuDoKu.');
+                      PrintWord(TXT_NO_ACTIVE_SUDOKU);
+                      PrintWord(TXT_PRESS_ENTER);
                       ReadLn;
                   end;
                end;
@@ -136,16 +137,17 @@ begin
                   if ivestas
                   then SaveSuDoKu(SDK, 'sdk')
                   else begin
-                     WriteLn('Pirma ivesk SuDoKu.');
+                     PrintWord(TXT_NO_ACTIVE_SUDOKU);
+                     PrintWord(TXT_PRESS_ENTER);
                      ReadLn;
                   end;
                end;
 			{ default: }
-			else WriteLn('Nepasirinko');
+			else PrintWord(TXT_MENU_ITEM_UNKNOWN);
         end;
-    until viskas;
+    until exitGame;
 
 
     Palaukti(500);
-end.
+End.
 
