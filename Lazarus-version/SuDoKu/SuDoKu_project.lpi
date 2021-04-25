@@ -26,7 +26,12 @@
       <FormatVersion Value="2"/>
       <Modes Count="0"/>
     </RunParams>
-    <Units Count="4">
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LazUtils"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="5">
       <Unit0>
         <Filename Value="SuDoKu_project.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -43,6 +48,10 @@
         <Filename Value="SuDoKu_Global.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="UnicodeCRT.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

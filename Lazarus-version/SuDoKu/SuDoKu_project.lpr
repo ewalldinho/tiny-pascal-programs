@@ -7,10 +7,8 @@
 
 program SuDoKu_project;
 
-   Uses SuDoKu_API, GUI_Toolkit, SuDoKu_Global, CRT;
-
-  //const EXTS : array[1..2] of string = ('sdk', 'txt');
-        //EXTC = 2;
+   Uses UnicodeCRT,
+        SuDoKu_API, GUI_Toolkit, SuDoKu_Global;
 
    Var SDK : SuDoKu;
        menuItem : integer;
@@ -23,14 +21,14 @@ program SuDoKu_project;
 
 begin
     { disable changing of characters CodePage, needed for box symbols to draw UI }
-    SetUseACP(FALSE);
     //SetUseACP(FALSE);
-    //SetSafeCPSwitching(TRUE);
 
     SetLanguage(LANG_LT);
     ChangeCursor(OFF);
     inputed := FALSE;
     viskas := FALSE;
+
+    InitSuDoKu(SDK);
 
     ShowSuDoKuScreen;
     FullScreen;

@@ -1,16 +1,30 @@
 (*******************************)
 {
 	Modulis: SuDoKu_API
-	Funkcionalumas: �gyvendina esmines sudoku �aidimo funkcijas: meniu rodymas, sprendimas, failo pasirinkimas ir pan.
+	Funkcionalumas: Įgyvendina esmines sudoku žaidimo funkcijas: meniu rodymas, sprendimas, failo pasirinkimas ir pan.
 	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com) 
-	
+
+    Table drawing symbols:
+        #201 ╔    #203 ╦    #187 ╗
+        #204 ╠    #206 ╬    #185 ╣
+        #200 ╚    #202 ╩    #188 ╝
+        #186 ║
+        #205 ═
+
+        #218 ┌    #194 ┬    #191 ┐
+        #195 ├    #197 ┼    #180 ┤
+        #192 └    #193 ┴    #217 ┘
+        #179 │
+        #196 ─
+
+        #176 ░    #177 ▒    #178 ▓
 }
 
 Unit SuDoKu_API;
 
 interface
 
-    Uses CRT, GUI_Toolkit;
+    Uses UnicodeCRT, GUI_Toolkit;
 
     Type // number = [1..9];
         SuDoKu_Row = array[1..9] of byte;
@@ -44,7 +58,7 @@ interface
 
 
 (*************  SuDoKu  sprendimas  *******************************************)
-  // gr��ina kiek liko galim� variant� tame langelyje ir likusia reiksme jei 1
+  // grąžina kiek liko galimų variantų tame langelyje ir likusia reiksme jei 1
   Function KiekLiko(x, y : byte; var sk : byte) : byte;
   
   Procedure InitSolveTemplate(SDK : SuDoKu);
@@ -52,9 +66,9 @@ interface
   Procedure Solve(var SDK : SuDoKu);
   // rekursyvi funkcija sprendiniui rasti
   Function BruteForce(var SDK : SuDoKu; gIndex : byte) : boolean;
-  // patikrina ar ura�ytos tinkamos reik�m�s
+  // patikrina ar urašytos tinkamos reikšmės
   Function IsValidSuDoKu(SDK : SuDoKu) : boolean;
-  // tikrina ar u�pildytas sudoku
+  // tikrina ar užpildytas sudoku
   Function Solved(SDK : SuDoKu) : boolean;
 
 
@@ -71,23 +85,36 @@ implementation
         TextColor(RED + BLINK);
         ClrScr;
         GoToXY(1, 3);
-        WriteLn('       ', #219,#219,#219,#219,#219, '                  ',                                  #220,#220,#220,#220,#220,#220,#220,#220, '                 ',#220,#220,#220,#220,#220, '   ', #220,#220,#220, '        ');
-        WriteLn('    ', #219,#223,#223,#223,#223,#223,#223,#223,#223,#223,#219, '                ',                   #219,#219,#219,#219,#219,#219,#219,#219,#219, '                ', #219,#219,#219, '   ', #222,#219, '         ');
-        WriteLn('   ', #222,#219,#221, '       ', #222, #219, #221, '               ',                                #219,#219,#219, '     ', #223,#219,#219, '              ', #219,#219,#219, '   ', #219,#221, '         ');
-        WriteLn('  ', #222,#219,#221, '        ', #223, #219, #223, '               ',                                #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#221, '        ');
-        WriteLn('   ', #222,#219,#221, '                         ',                                                   #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#219, '        ');
-        WriteLn('    ', #222,#219,#219,#219,#219,#219,#219,#221, '                   ',                               #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '   ', #219,#219, '         ');
-        WriteLn('      ', #222,#219,#219,#219,#219,#219,#219,#221, '    ',#177,#177,#177,'   ',#177,#177,#177,'    ', #219,#219,#219, '      ', #219,#219,#219, '    ', #178,#178,#178,#178, '     ', #219,#219,#219,#219,#219,#219,#219, '   ', #176,#176,#176, '   ', #176,#176,#176);
-        WriteLn('            ',                   #222,#219,#219, '    ', #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219,#219,#219,#219, '     ', #176,#176, '    ', #176,#176);
-        WriteLn('              ',                  #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, ' ', #219,#219,#219, '    ', #176,#176, '    ', #176,#176);
-        WriteLn('  ', #220,#219,#220, '         ', #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '   ', #219,#219, '   ', #176,#176, '    ', #176,#176);
-        WriteLn('  ', #222,#219,#221, '        ', #222,#219,#221, '   ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '     ', #220,#219,#219, '   ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '    ', #219,#219, '  ', #176,#176, '    ', #176,#176);
-        WriteLn('   ', #219,#220,#220,#220,#220,#220,#220,#220,#220,#220,#220,#219, '    ', #177,#177,#177,#177,#177,#177,#177,#177, '    ', #219,#219,#219,#219,#219,#219,#219,#219,#219, '     ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219, '   ', #222,#219, '   ', #176,#176,#176,#176,#176,#176,#176,#176);
-        WriteLn('     ', #219,#219,#219,#219,#219,#219,#219, '        ',  #177,#177,#177,#177, ' ', #177,#177,#177, '  ', #223,#223,#223,#223,#223,#223,#223,#223, '         ', #178,#178,#178,#178, '    ', #223,#223,#223,#223,#223 ,'  ', #223,#223,#223, '   ', #176,#176,#176,#176, ' ', #176,#176,#176);
+        //WriteLn('       ', #219,#219,#219,#219,#219, '                  ',                                  #220,#220,#220,#220,#220,#220,#220,#220, '                 ',#220,#220,#220,#220,#220, '   ', #220,#220,#220, '        ');
+        //WriteLn('    ', #219,#223,#223,#223,#223,#223,#223,#223,#223,#223,#219, '                ',                   #219,#219,#219,#219,#219,#219,#219,#219,#219, '                ', #219,#219,#219, '   ', #222,#219, '         ');
+        //WriteLn('   ', #222,#219,#221, '       ', #222, #219, #221, '               ',                                #219,#219,#219, '     ', #223,#219,#219, '              ', #219,#219,#219, '   ', #219,#221, '         ');
+        //WriteLn('  ', #222,#219,#221, '        ', #223, #219, #223, '               ',                                #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#221, '        ');
+        //WriteLn('   ', #222,#219,#221, '                         ',                                                   #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '    ', #219,#219, '        ');
+        //WriteLn('    ', #222,#219,#219,#219,#219,#219,#219,#221, '                   ',                               #219,#219,#219, '      ', #219,#219,#219, '             ', #219,#219,#219, '   ', #219,#219, '         ');
+        //WriteLn('      ', #222,#219,#219,#219,#219,#219,#219,#221, '    ',#177,#177,#177,'   ',#177,#177,#177,'    ', #219,#219,#219, '      ', #219,#219,#219, '    ', #178,#178,#178,#178, '     ', #219,#219,#219,#219,#219,#219,#219, '   ', #176,#176,#176, '   ', #176,#176,#176);
+        //WriteLn('            ',                   #222,#219,#219, '    ', #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219,#219,#219,#219, '     ', #176,#176, '    ', #176,#176);
+        //WriteLn('              ',                  #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, ' ', #219,#219,#219, '    ', #176,#176, '    ', #176,#176);
+        //WriteLn('  ', #220,#219,#220, '         ', #222,#219,#221, '  ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '      ', #219,#219,#219, '  ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '   ', #219,#219, '   ', #176,#176, '    ', #176,#176);
+        //WriteLn('  ', #222,#219,#221, '        ', #222,#219,#221, '   ',  #177,#177, '    ', #177,#177, '    ',       #219,#219,#219, '     ', #220,#219,#219, '   ', #178,#178, '    ', #178,#178, '   ', #219,#219,#219, '    ', #219,#219, '  ', #176,#176, '    ', #176,#176);
+        //WriteLn('   ', #219,#220,#220,#220,#220,#220,#220,#220,#220,#220,#220,#219, '    ', #177,#177,#177,#177,#177,#177,#177,#177, '    ', #219,#219,#219,#219,#219,#219,#219,#219,#219, '     ', #178,#178,#178,#178, #178,#178,#178,#178, '   ', #219,#219,#219, '   ', #222,#219, '   ', #176,#176,#176,#176,#176,#176,#176,#176);
+        //WriteLn('     ', #219,#219,#219,#219,#219,#219,#219, '        ',  #177,#177,#177,#177, ' ', #177,#177,#177, '  ', #223,#223,#223,#223,#223,#223,#223,#223, '         ', #178,#178,#178,#178, '    ', #223,#223,#223,#223,#223 ,'  ', #223,#223,#223, '   ', #176,#176,#176,#176, ' ', #176,#176,#176);
+        WriteLn('       █████                  ▄▄▄▄▄▄▄▄                 ▄▄▄▄▄   ▄▄▄        ');
+        WriteLn('    █▀▀▀▀▀▀▀▀▀█                █████████                ███   ▐█         ');
+        WriteLn('   ▐█▌       ▐█▌               ███     ▀██              ███   █▌         ');
+        WriteLn('  ▐█▌        ▀█▀               ███      ███             ███    █▌        ');
+        WriteLn('   ▐█▌                         ███      ███             ███    ██        ');
+        WriteLn('    ▐██████▌                   ███      ███             ███   ██         ');
+        WriteLn('      ▐██████▌    ▒▒▒   ▒▒▒    ███      ███    ▓▓▓▓     ███████   ░░░   ░░░');
+        WriteLn('            ▐██    ▒▒    ▒▒    ███      ███  ▓▓▓▓▓▓▓▓   ██████     ░░    ░░');
+        WriteLn('              ▐█▌  ▒▒    ▒▒    ███      ███  ▓▓    ▓▓   ███ ███    ░░    ░░');
+        WriteLn('  ▄█▄         ▐█▌  ▒▒    ▒▒    ███      ███  ▓▓    ▓▓   ███   ██   ░░    ░░');
+        WriteLn('  ▐█▌        ▐█▌   ▒▒    ▒▒    ███     ▄██   ▓▓    ▓▓   ███    ██  ░░    ░░');
+        WriteLn('   █▄▄▄▄▄▄▄▄▄▄█    ▒▒▒▒▒▒▒▒    █████████     ▓▓▓▓▓▓▓▓   ███   ▐█   ░░░░░░░░');
+        WriteLn('     ███████        ▒▒▒▒ ▒▒▒  ▀▀▀▀▀▀▀▀         ▓▓▓▓    ▀▀▀▀▀   ▀▀▀   ░░░░ ░░░');
         WriteLn;
         GoToXY(3, WhereY);
-        for i := 1 to 38 do Write(#219);
-        for i := 1 to 38 do Write(#223);
+        for i := 1 to 38 do Write('█'); // (#219);
+        for i := 1 to 38 do Write('▀'); // (#223);
         GoToXY(35, 20);
         WriteLn('press [enter]');
         ReadLn;
@@ -98,7 +125,7 @@ implementation
   Procedure Menu(var m : integer);
         var total : integer;
             done : boolean;
-        // procedura pa�ym�ti menu punktui
+        // procedura pažymėti menu punktui
         procedure showMenu(select : integer);
         begin
 
@@ -141,7 +168,7 @@ implementation
     begin
         done := FALSE;
         total := 5;
-        // tur�t� jau b�ti inicijuotas, bet patikrinam vistiek
+        // turėtų jau būti inicijuotas, bet patikrinam vistiek
         if m < 1 then
         begin
              m := 1;
@@ -180,12 +207,12 @@ implementation
         TextColor(BLACK);
         ClrScr;
 
-        Write(#201);
+        Write('╔'); // (#201);
         for x := 1 to 35 do
             if x mod 12 = 0
-            then Write(#203)
-            else Write(#205);
-        WriteLn(#187);
+            then Write('╦') // (#203)
+            else Write('═'); // (#205)
+        WriteLn('╗'); // (#187)
 
         for y := 1 to 17 do
         begin
@@ -200,39 +227,39 @@ implementation
                     end
                     else
                         if (x-1) mod 12 = 0
-                        then Write(#186)    // po 3 (Ra�o ||)
-                        else Write(#179);   // po 1 (ra�o |)
-                WriteLn(#186);
+                        then Write('║')    // (#186) po 3 (Rašo ||)
+                        else Write('│');   // (#179) po 1 (rašo |)
+                WriteLn('║'); // (#186)
             end
             else begin
                 if y mod 6 = 0 then
                 begin
-                    Write(#204); // ||=
+                    Write('╠'); // (#204) ||=
                     for x := 1 to 17 do
                         if x mod 6 = 0
-                        then Write(#205, #206)  // =||=
-                        else Write(#205, #205); // =
-                    WriteLn(#205, #185);  // =||
+                        then Write('═╬')  // (#205, #206) =||=
+                        else Write('══'); // (#205, #205) =
+                    WriteLn('═╣');  // (#205, #185) =||
                 end
                 else begin
-                    Write(#186);  // #204 ||=
+                    Write('║');  // (#186) #204 ||=
                     for x := 1 to 35 do
                         if x mod 12 = 0
-                        then Write(#186)  // #206 =||=
+                        then Write('║')  // (#186) #206 =||=
                         else if x mod 4 = 0
-                             then Write(#197)    // ra�o -|-
-                             else Write(#196);   // ra�o -
-                    WriteLn(#186);  // #185 =||
+                             then Write('┼')    // (#197) rašo -|-
+                             else Write('─');   // (#196) rašo -
+                    WriteLn('║');  // (#186) =||
                 end;
             end;
         end;
 
-        Write(#200);
+        Write('╚'); // (#200);
         For x := 1 to 35 do
             if x mod 12 = 0
-            then Write(#202)
-            else Write(#205);
-        WriteLn(#188);
+            then Write('╩')   // (#202)
+            else Write('═');  // (#205)
+        WriteLn('╝');  // (#188);
     end;
 
   Procedure ShowSuDoKu(SDK : SuDoKu);
@@ -416,9 +443,9 @@ implementation
         done := FALSE;
         sdkIn := FALSE;
 
-        // kursorius tampa sta�iakampis (kaip insert)
+        // kursorius tampa stačiakampis (kaip insert)
         CursorBig;
-        // vykdomas �vedimas
+        // vykdomas įvedimas
         repeat
             GoToXY(X*4-1, Y*2);
             key := GetKey;
@@ -464,7 +491,7 @@ implementation
 
 (******************************************************************************)
 
-  // gr��ina kiek liko galim� variant� tame langelyje ir likusia reiksme jei 1
+  // grąžina kiek liko galimų variantų tame langelyje ir likusia reiksme jei 1
   Function KiekLiko(x, y : byte; var sk : byte) : byte;
         var i, kiek, index : byte;
     begin
@@ -498,11 +525,11 @@ implementation
   Procedure InitSolveTemplate(SDK : SuDoKu);
        var x, y, i : byte;
     begin
-        // nustatomos pradin�s reik�m�s
+        // nustatomos pradinės reikšmės
         for y := 1 to 81 do
             for x := 1 to 9 do
                 sTmp[y][x] := TRUE;
-        // pakei�iamos pagal sudoku reik�mes
+        // pakeičiamos pagal sudoku reikšmes
         for y := 1 to 9 do
             for x := 1 to 9 do
                 if SDK[y][x] > 0
@@ -639,7 +666,7 @@ implementation
                 if valid and isMin
                 then BF := TRUE
                 else begin
-                    SDK[gY][gX] := 0;  // gr��inam pradin� reik�m�
+                    SDK[gY][gX] := 0;  // grąžinam pradinę reikšmę
                     BF := FALSE;
                 end;
             end
@@ -654,7 +681,7 @@ implementation
             if SDK[gY][gX] = 0
             then begin
                 min := 0;
-                // ciklas sp�ti dar kart, jei prie� tai nepavyko
+                // ciklas spėti dar kart, jei prieš tai nepavyko
                 repeat
                     repeat
                         isMin := Minimal(gIndex, min);
@@ -668,7 +695,7 @@ implementation
                   if valid and isMin
                     then BF := BruteForce(SDK, gIndex+1)
                     else begin
-                        SDK[gY][gX] := 0;  // gr��inam pradin� reik�m�
+                        SDK[gY][gX] := 0;  // grąžinam pradinę reikšmę
                         BF := FALSE;
                     end;
                 until BF or (not isMin);
@@ -677,7 +704,7 @@ implementation
                 BF := BruteForce(SDK, gIndex+1);
             end;
         end;
-        // gr��ina ar k� pavyko padaryti su iki �iol sp�tomis reik�m�mis
+        // grąžina ar ką pavyko padaryti su iki šiol spėtomis reikšmėmis
         // t.y. ar ta seka buvo tinkama ar ne.
         BruteForce := BF;
     end;
@@ -770,9 +797,9 @@ implementation
         end;
     end;
 
-  // tikrina ar u�pildytas sudoku
+  // tikrina ar užpildytas sudoku
   Function Solved(SDK : SuDoKu) : boolean;
-        var x, y, left : byte;  // left - kiek sk. tr�ksta iki u�pildymo
+        var x, y, left : byte;  // left - kiek sk. trūksta iki užpildymo
     begin
       left := 0;
       for y := 1 to 9 do

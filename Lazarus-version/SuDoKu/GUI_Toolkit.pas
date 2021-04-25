@@ -10,7 +10,7 @@ Unit GUI_Toolkit;
 
 INTERFACE
 
-   Uses CRT, DOS;
+   Uses UnicodeCRT, DOS;
 
    Const KEY_UP = 72;
          KEY_DOWN = 75;
@@ -168,10 +168,10 @@ IMPLEMENTATION
                 GoToXY(x, y);
                 for i := 1 to bWidth do
                     Write(' ');
-                Write(#220);
+                Write('▄'); // #220
                 GoToXY(x+1, y+1);
                 for i := 1 to bWidth do
-                    Write(#223);
+                    Write('▀'); // #223
 
                 TextBackground(BLUE);
                 TextColor(WHITE);
@@ -185,25 +185,25 @@ IMPLEMENTATION
         select := 2;
         if posX + width > 80 then width := 80 - posX;
         Langas(posX, posY, posX+width, posY+height, GREEN, WHITE);
-        Write(#201);
+        Write('╔'); // #201
         for i := 1 to width-1 do
-            Write(#205);
-        Write(#187);
+            Write('═'); // #205
+        Write('╗'); // #187
         GoToXY(1,2);
         for j := 1 to height-1 do
             begin
-                Write(#186);
+                Write('║'); // #186
                 for i := 1 to width-1 do
                     Write(' ');
-                Write(#186);
+                Write('║'); // #186
             end;
         GoToXY(1, height);
-        Write(#200);
+        Write('╚'); // #200
         for i := 1 to width-1 do
-            Write(#205);
-        Write(#188);
+            Write('═'); // #205
+        Write('╝'); // #188
         GoToXY(1, height+1);
-        Write(' Use: '+ #27#26 +' or TAB');
+        Write(' Use: ←→ or TAB'); // #27#26
         
         repeat
             YesNoButton(select=1, yesTitle, 4, 4);
@@ -406,22 +406,22 @@ IMPLEMENTATION
         spaces := spaces div 2;
 
         GoToXY(startX, startY);
-        Write(#201); for i := 1 to width do Write(#205); Write(#187);
-        //Write('╔'); for i := 1 to width do Write('═'); Write('╗');
+        //Write(#201); for i := 1 to width do Write(#205); Write(#187);
+        Write('╔'); for i := 1 to width do Write('═'); Write('╗');
 
         GoToXY(startX, startY+1);
-        Write(#186); // ('║');
+        Write('║'); // (#186);
         for i := 1 to spaces do
             Write(' ');
         Write(btnTitle);
         for i := 1 to spaces do
             Write(' ');
         if xSpace then Write(' ');
-        Write(#186); // ('║');
+        Write('║'); // (#186);
 
         GoToXY(startX, startY+2);
-        Write(#200); for i := 1 to width do Write(#205); Write(#188);
-        //Write('╚'); for i := 1 to width do Write('═'); Write('╝');
+        //Write(#200); for i := 1 to width do Write(#205); Write(#188);
+        Write('╚'); for i := 1 to width do Write('═'); Write('╝');
     end;
 
   // nuskaito paspaustą klavišą ir grąžina vieną iš konstantų arba simbolio kodą

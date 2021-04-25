@@ -1,7 +1,7 @@
 (*******************************)
 {
 	Modulis: SuDoKU_Global.
-	Funkcionalumas: modulis skirtas þaidimo globalizavimui, pateikimui skirtingomis kalbomis.
+	Funkcionalumas: modulis skirtas Å¾aidimo globalizavimui, pateikimui skirtingomis kalbomis.
 	Autorius: Evaldas Naujanis (evaldas.naujanis@gmail.com) 
 	
 }
@@ -55,7 +55,7 @@ implementation
         lang := language;
     end;
     
-{-- funkcjija gauti þodþiui ar frazei --}
+{-- funkcjija gauti Å¾odÅ¾iui ar frazei --}
   Function GetWord(code : word) : string;
     begin
         case lang of
