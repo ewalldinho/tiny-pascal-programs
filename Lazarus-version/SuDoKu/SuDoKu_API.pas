@@ -33,13 +33,13 @@ interface
 (*************  SuDoKu  valdymas  *********************************************)
 
   // nunulina SuDoKu ([[0,0,0|0,0,0|0,0,0]x9)
-  Procedure InitSuDoKu(var SDK : SuDoKu);
+  Procedure InitSuDoKu(out SDK : SuDoKu);
   Procedure CreateSuDoKu(var SDK : SuDoKu; var created : boolean);
   Procedure EditSuDoKu(var SDK : SuDoKu);
   Procedure SaveSuDoKu(SDK : SuDoKu; dir : string);
   
   Procedure InputFromFile (dir : string; var SDK : SuDoKu; var sdkIn : boolean);
-  Procedure InputFromKeyboard (var SDK : SuDoKu; var confirmed : boolean);
+  Procedure InputFromKeyboard (var SDK : SuDoKu; out confirmed : boolean);
 
 
 (*************  SuDoKu  sprendimas  *******************************************)
@@ -315,7 +315,7 @@ implementation
 
 (******************************************************************************)
 
-  Procedure InitSuDoKu(var SDK : SuDoKu);
+  Procedure InitSuDoKu(out SDK : SuDoKu);
       var x, y : byte;
     begin
         for y := 1 to 9 do
@@ -470,7 +470,7 @@ implementation
         ReadLn;
     end;
 
-  Procedure InputFromKeyboard (var SDK : SuDoKu; var confirmed : boolean);
+  Procedure InputFromKeyboard (var SDK : SuDoKu; out confirmed : boolean);
         var X, Y : byte;
             key : smallint;
             done : boolean;
