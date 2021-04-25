@@ -125,45 +125,42 @@ implementation
   Procedure Menu(var m : integer);
         var total : integer;
             done : boolean;
+
+        // set color according if button is selected
+        procedure SetButtonColor(isSelected : boolean);
+        begin
+            if isSelected
+              then TextColor(RED)
+              else TextColor(BLUE);
+        end;
+
         // procedura pažymėti menu punktui
         procedure showMenu(select : integer);
         begin
 
             GoToXY(5, 3);
-            TextColor(BLUE);
+            TextColor(BLACK);
             WriteLn('- SuDoKu menu -');
 
-            if select = 1
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 1);
             DrawButton('Create SuDoKu', 15, 5, 5);
 
-            if select = 2
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 2);
             DrawButton('Load SuDoKu', 15, 5, 8);
 
-            if select = 3
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 3);
             DrawButton('Edit SuDoKu', 15, 5, 11);
 
-            if select = 4
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 4);
             DrawButton('Solve SuDoKu', 15, 5, 14);
 
-            if select = 5
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 5);
             DrawButton('Save SuDoKu', 15, 5, 17);
 
-            if select = 0
-            then TextColor(RED)
-            else TextColor(BLUE);
+            SetButtonColor(select = 0);
             DrawButton('Exit SuDoKu', 15, 5, 20);
 
-            TextColor(BLUE);
+            TextColor(BLACK);
         end;
     begin
         done := FALSE;
