@@ -128,10 +128,7 @@ implementation
 
         enterGame := FALSE;
         repeat
-            //enterText := GetWord(TXT_PRESS_ENTER);
             CenterText(40, 20, GetWord(TXT_PRESS_ENTER));
-            //GoToXY(35, 20);
-            //PrintWord(TXT_PRESS_ENTER);
 
             GoToXY(37, 22);
             SetColors(Yellow, Red, CurrentLanguage=LANG_LT);
@@ -425,7 +422,7 @@ implementation
           x, y : byte;
           exts : ExtsType;
     begin
-
+        failoPav := '';
         exts[1] := 'sdk';
         exts[2] := 'txt';
         SelectFile(dir, failoPav, exts, 512);
@@ -563,7 +560,7 @@ implementation
     end;
     
   Procedure InitSolveTemplate(SDK : SuDoKu);
-       var x, y, i : byte;
+       var x, y : byte;
     begin
         // nustatomos pradinės reikšmės
         for y := 1 to 81 do
@@ -610,7 +607,7 @@ implementation
     end;
 
   Procedure CheckIfOnePossible(SDK : SuDoKu; x, y : byte);
-      var i,j, v,theOne, qX,qY, index : byte;
+      var i,j, v, qX,qY, index : byte;
           onlyR, onlyC, onlyQ : boolean;
     begin
         index := (y-1)*9 + x;
@@ -752,6 +749,7 @@ implementation
       var rasta : boolean;
           x, y, liko, sk : byte;
     begin
+        sk := 0;
         repeat
             rasta := FALSE;
             for y := 1 to 9 do

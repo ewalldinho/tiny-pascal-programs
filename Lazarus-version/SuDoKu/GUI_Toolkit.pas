@@ -156,7 +156,8 @@ IMPLEMENTATION
 
   Function ConfirmDialog(posX, posY, width : byte; yesTitle, noTitle : string) : boolean;
       var done : boolean;
-          key, select, i, j, height : byte;
+          select, i, j, height : byte;
+          key : Word;
 
       procedure YesNoButton(selected : boolean; title : string; x, y : byte);
           var bWidth, i : byte;
@@ -290,7 +291,7 @@ IMPLEMENTATION
   Procedure SelectFile(dir : string; var failas : string; extensions : ExtsType; maxSize : word);
       var rec : SearchRec;
           i, nr, inPage, numOfFiles, numOfExts,
-          p, page, pages : word;
+          page, pages : word;
           files : array[1..FPP] of string;
           done, telpaFailai : boolean;
     begin
